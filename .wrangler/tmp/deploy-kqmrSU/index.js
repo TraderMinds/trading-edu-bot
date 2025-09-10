@@ -1,61 +1,20 @@
-// Cloudflare Worker: scheduled hourly to post trading educational content to Telegram
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// Environment vars expected:
-// TELEGRAM_BOT_TOKEN - required
-// TELEGRAM_CHAT_ID - required
-// OPENROUTER_API_KEY - optional (if provided, worker will call OpenRouter for text generation)
-
-const TELEGRAM_API_BASE = 'https://api.telegram.org';
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // ms
-
-// Utility function for delays
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Structured error logging
-function logError(error, context = {}) {
-  console.error(JSON.stringify({
-    error: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString(),
-    ...context
-  }));
-}
-
-async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(url, options);
-      if (res.ok) return res;
-      
-      // Handle rate limits specially
-      if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After') || RETRY_DELAY;
-        await sleep(parseInt(retryAfter) * 1000);
-        continue;
-      }
-      
-      throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-    } catch (err) {
-      if (i === retries - 1) throw err;
-      await sleep(RETRY_DELAY * Math.pow(2, i)); // Exponential backoff
-    }
-  }
-}
-
+// src/index.js
+var TELEGRAM_API_BASE = "https://api.telegram.org";
 async function generateTextWithOpenRouter(prompt, apiKey) {
   if (!apiKey) {
-    throw new Error('OpenRouter API key is required');
+    throw new Error("OpenRouter API key is required");
   }
-
-  const url = 'https://openrouter.ai/api/v1/chat/completions';
-  console.log('Generating content with OpenRouter API key:', apiKey ? 'Present' : 'Missing');
-  
+  const url = "https://openrouter.ai/api/v1/chat/completions";
+  console.log("Generating content with OpenRouter API key:", apiKey ? "Present" : "Missing");
   const body = {
-    model: 'openai/gpt-oss-20b:free', // Using free OpenAI OSS model
+    model: "openai/gpt-oss-20b:free",
+    // Using free OpenAI OSS model
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are an expert trading educator specializing in forex and cryptocurrency markets.
         Create beautifully formatted educational content for Telegram that includes:
 
@@ -75,163 +34,154 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
         - Format important points in bold
         - Add relevant emojis for each section
         - Keep paragraphs short for mobile readability
-        - Use dividers (e.g., ━━━━━━━━━━) between major sections
+        - Use dividers (e.g., \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501) between major sections
 
         Minimum length should be 500 words.
         Make it visually appealing and easy to read on mobile devices.`
       },
-      { role: 'user', content: prompt }
+      { role: "user", content: prompt }
     ],
-    max_tokens: 1500, // Increased token limit for longer content
-    temperature: 0.7 // Balanced between creativity and consistency
+    max_tokens: 1500,
+    // Increased token limit for longer content
+    temperature: 0.7
+    // Balanced between creativity and consistency
   };
-
-  console.log('Making OpenRouter API request with body:', JSON.stringify(body));
-  
+  console.log("Making OpenRouter API request with body:", JSON.stringify(body));
   try {
-    const res = await fetch(url, {
-      method: 'POST',
+    const res2 = await fetch(url, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://trading-edu-bot-worker.tradermindai.workers.dev',
-        'X-Title': 'Trading Education Bot',
-        'X-Model': 'openai/gpt-oss-20b:free'
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://trading-edu-bot-worker.tradermindai.workers.dev",
+        "X-Title": "Trading Education Bot",
+        "X-Model": "openai/gpt-oss-20b:free"
       },
       body: JSON.stringify(body)
     });
-
-    console.log('OpenRouter API response status:', res.status);
-    
-    if (!res.ok) {
-      const txt = await res.text();
-      console.error('OpenRouter API error response:', txt);
-      throw new Error(`API error (${res.status}): ${txt}`);
+    console.log("OpenRouter API response status:", res2.status);
+    if (!res2.ok) {
+      const txt = await res2.text();
+      console.error("OpenRouter API error response:", txt);
+      throw new Error(`API error (${res2.status}): ${txt}`);
     }
   } catch (fetchError) {
-    console.error('OpenRouter API fetch error:', fetchError);
+    console.error("OpenRouter API fetch error:", fetchError);
     throw fetchError;
   }
-
   try {
     const json = await res.json();
-    console.log('OpenRouter API response:', JSON.stringify(json));
-    
-    // Handle OpenRouter response format
+    console.log("OpenRouter API response:", JSON.stringify(json));
     if (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) {
       const content = json.choices[0].message.content.trim();
-      console.log('Generated content length:', content.length);
+      console.log("Generated content length:", content.length);
       return content;
     }
-    
-    // Try alternative response shapes
     if (json.output) {
       const content = String(json.output).trim();
-      console.log('Generated content length (output):', content.length);
+      console.log("Generated content length (output):", content.length);
       return content;
     }
     if (json.text) {
       const content = String(json.text).trim();
-      console.log('Generated content length (text):', content.length);
+      console.log("Generated content length (text):", content.length);
       return content;
     }
-    
-    // If no known response shape matches, log the response and throw error
-    console.error('Unexpected API response shape:', JSON.stringify(json));
-    throw new Error('Unexpected response format from OpenRouter API');
+    console.error("Unexpected API response shape:", JSON.stringify(json));
+    throw new Error("Unexpected response format from OpenRouter API");
   } catch (parseError) {
-    console.error('Failed to parse API response:', parseError);
-    throw new Error('Failed to parse API response');
+    console.error("Failed to parse API response:", parseError);
+    throw new Error("Failed to parse API response");
   }
 }
-
+__name(generateTextWithOpenRouter, "generateTextWithOpenRouter");
 function fallbackText(topic) {
   const tips = [
     // Comprehensive Risk Management Guide
-    `🎯 <b>Ultimate Guide to Risk Management in ${topic} Trading</b> 📊
-⏱ Reading Time: 4 minutes
+    `\u{1F3AF} <b>Ultimate Guide to Risk Management in ${topic} Trading</b> \u{1F4CA}
+\u23F1 Reading Time: 4 minutes
 
-━━━━━━━━━━ Introduction ━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 Introduction \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
-🔍 Understanding risk management is <b>crucial for long-term success</b> in ${topic} trading. In this comprehensive guide, we'll break down the essential components of professional risk management.
+\u{1F50D} Understanding risk management is <b>crucial for long-term success</b> in ${topic} trading. In this comprehensive guide, we'll break down the essential components of professional risk management.
 
-━━━━━━━━━━ Core Principles ━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 Core Principles \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
-📌 <b>1. Position Sizing Fundamentals</b>
+\u{1F4CC} <b>1. Position Sizing Fundamentals</b>
 
-• Never risk more than 1-2% per trade
-• Calculate position size based on:
-  ↳ Account balance
-  ↳ Stop loss distance
-  ↳ Market volatility
+\u2022 Never risk more than 1-2% per trade
+\u2022 Calculate position size based on:
+  \u21B3 Account balance
+  \u21B3 Stop loss distance
+  \u21B3 Market volatility
 
-⚠️ <b>WARNING:</b> <i>Overleveraging is the #1 reason traders blow their accounts!</i>
+\u26A0\uFE0F <b>WARNING:</b> <i>Overleveraging is the #1 reason traders blow their accounts!</i>
 
-🎯 <b>2. Strategic Stop Loss Placement</b>
+\u{1F3AF} <b>2. Strategic Stop Loss Placement</b>
 
-• Set stops <u>before</u> entering trades
-• Place at key technical levels:
-  ↳ Support/Resistance breaks
-  ↳ Trend line violations
-  ↳ Pattern invalidation points
+\u2022 Set stops <u>before</u> entering trades
+\u2022 Place at key technical levels:
+  \u21B3 Support/Resistance breaks
+  \u21B3 Trend line violations
+  \u21B3 Pattern invalidation points
 
-💡 <b>PRO TIP:</b> <i>Add 1-2% buffer for market noise</i>
+\u{1F4A1} <b>PRO TIP:</b> <i>Add 1-2% buffer for market noise</i>
 
-🔄 <b>3. Risk-Reward Optimization</b>
+\u{1F504} <b>3. Risk-Reward Optimization</b>
 
-• Target minimum 1:2 risk-reward ratio
-• Scale positions intelligently:
-  ↳ Reduce size after losses
-  ↳ Increase after verified edge
-  ↳ Match size to setup quality
+\u2022 Target minimum 1:2 risk-reward ratio
+\u2022 Scale positions intelligently:
+  \u21B3 Reduce size after losses
+  \u21B3 Increase after verified edge
+  \u21B3 Match size to setup quality
 
-🏆 <b>WINNING STRATEGY:</b> <i>Start small, scale up with success</i>
+\u{1F3C6} <b>WINNING STRATEGY:</b> <i>Start small, scale up with success</i>
 
-📊 <b>4. Portfolio Risk Management</b>
+\u{1F4CA} <b>4. Portfolio Risk Management</b>
 
-• Monitor correlations between pairs
-• Max portfolio risk: 5-6% total
-• Diversify across:
-  ↳ Different timeframes
-  ↳ Multiple strategies
-  ↳ Uncorrelated assets
+\u2022 Monitor correlations between pairs
+\u2022 Max portfolio risk: 5-6% total
+\u2022 Diversify across:
+  \u21B3 Different timeframes
+  \u21B3 Multiple strategies
+  \u21B3 Uncorrelated assets
 
-⚠️ <b>CRITICAL:</b> <i>Never risk your entire portfolio on correlated positions!</i>
+\u26A0\uFE0F <b>CRITICAL:</b> <i>Never risk your entire portfolio on correlated positions!</i>
 
-🎯 <b>5. Implementation Checklist</b>
+\u{1F3AF} <b>5. Implementation Checklist</b>
 
 <b>Before Trading:</b>
-✓ Calculate max position size
-✓ Set clear stop loss level
-✓ Define profit targets
-✓ Check correlations
+\u2713 Calculate max position size
+\u2713 Set clear stop loss level
+\u2713 Define profit targets
+\u2713 Check correlations
 
 <b>During Trading:</b>
-✓ Monitor price action
-✓ Follow your plan
-✓ No emotional decisions
+\u2713 Monitor price action
+\u2713 Follow your plan
+\u2713 No emotional decisions
 
 <b>After Trading:</b>
-✓ Document everything
-✓ Calculate R:R ratio
-✓ Review performance
-✓ Update journal
+\u2713 Document everything
+\u2713 Calculate R:R ratio
+\u2713 Review performance
+\u2713 Update journal
 
-━━━━━━━━━━ Key Takeaways ━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 Key Takeaways \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
-🎯 <b>Remember These Points:</b>
+\u{1F3AF} <b>Remember These Points:</b>
 
-1️⃣ Position sizing is <u>non-negotiable</u>
-2️⃣ Always know your max loss
-3️⃣ Keep detailed trading records
-4️⃣ Scale positions wisely
-5️⃣ Review and adjust regularly
+1\uFE0F\u20E3 Position sizing is <u>non-negotiable</u>
+2\uFE0F\u20E3 Always know your max loss
+3\uFE0F\u20E3 Keep detailed trading records
+4\uFE0F\u20E3 Scale positions wisely
+5\uFE0F\u20E3 Review and adjust regularly
 
-⭐️ <b>GOLDEN RULE:</b> <i>Protection of capital comes first, profits second!</i>
+\u2B50\uFE0F <b>GOLDEN RULE:</b> <i>Protection of capital comes first, profits second!</i>
 
-━━━━━━━━━━ Action Steps ━━━━━━━━━━
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 Action Steps \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
-📝 <b>Your Next Steps:</b>
+\u{1F4DD} <b>Your Next Steps:</b>
 
 1. Calculate your per-trade risk limit
 2. Create a position sizing spreadsheet
@@ -239,14 +189,13 @@ function fallbackText(topic) {
 4. Review your last 10 trades
 5. Adjust your risk parameters
 
-🎓 <b>Final Thought:</b> <i>Success in ${topic} trading starts with mastering risk management. Start implementing these principles today!</i>
+\u{1F393} <b>Final Thought:</b> <i>Success in ${topic} trading starts with mastering risk management. Start implementing these principles today!</i>
 
 #Trading #RiskManagement #${topic} #TradingEducation
 
 Remember: Professional traders focus on risk management first, profits second. Your primary goal should be capital preservation, which enables long-term participation in the markets.`,
-
     // Comprehensive Technical Analysis Guide
-    `📈 Mastering Technical Analysis in ${topic} Trading
+    `\u{1F4C8} Mastering Technical Analysis in ${topic} Trading
 
 A comprehensive approach to technical analysis combines multiple timeframes and indicators to identify high-probability trading opportunities. Here's your complete guide:
 
@@ -308,94 +257,77 @@ Remember: Technical analysis is a probability tool, not a guarantee. Combine it 
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
-
+__name(fallbackText, "fallbackText");
 function getUnsplashImageUrl(keywords) {
-  // Use Unsplash Source to get a relevant free image. No API key required.
-  // Example: https://source.unsplash.com/1600x900/?crypto,finance
-  const q = encodeURIComponent(keywords.join(','));
+  const q = encodeURIComponent(keywords.join(","));
   return `https://source.unsplash.com/1600x900/?${q}`;
 }
-
+__name(getUnsplashImageUrl, "getUnsplashImageUrl");
 async function postToTelegram(botToken, chatId, caption, imageUrl) {
   const endpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendPhoto`;
   const body = {
     chat_id: chatId,
     photo: imageUrl,
     caption,
-    parse_mode: 'HTML'
+    parse_mode: "HTML"
   };
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res2 = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-
-  const txt = await res.text();
-  if (!res.ok) {
-    throw new Error(`Telegram API error: ${res.status} ${txt}`);
+  const txt = await res2.text();
+  if (!res2.ok) {
+    throw new Error(`Telegram API error: ${res2.status} ${txt}`);
   }
   return txt;
 }
-
+__name(postToTelegram, "postToTelegram");
 async function buildAndSend(env) {
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const chatId = env.TELEGRAM_CHAT_ID;
-  if (!botToken || !chatId) throw new Error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
-
-  const topic = ['crypto', 'forex'][Math.floor(Math.random() * 2)];
+  if (!botToken || !chatId) throw new Error("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID");
+  const topic = ["crypto", "forex"][Math.floor(Math.random() * 2)];
   const prompt = `Write a short educational trading tip for ${topic} traders. Keep it actionable and friendly.`;
-
-  let caption = '';
+  let caption = "";
   if (env.OPENROUTER_API_KEY) {
     try {
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
     } catch (err) {
-      // fallback to template if AI call fails
-      console.error('OpenRouter call failed:', err.message);
+      console.error("OpenRouter call failed:", err.message);
       caption = fallbackText(topic);
     }
   } else {
     caption = fallbackText(topic);
   }
-
-  // Keep caption reasonably short for Telegram messages
-  if (caption.length > 1000) caption = caption.slice(0, 990) + '...';
-
-  // Compose image query keywords
-  const imgUrl = getUnsplashImageUrl([topic, 'trading', 'finance']);
-
+  if (caption.length > 1e3) caption = caption.slice(0, 990) + "...";
+  const imgUrl = getUnsplashImageUrl([topic, "trading", "finance"]);
   const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl);
   return sendResult;
 }
-
-export default {
+__name(buildAndSend, "buildAndSend");
+var index_default = {
   async scheduled(event, env, ctx) {
-    // Use waitUntil so the scheduled event can finish asynchronously
     ctx.waitUntil((async () => {
       try {
-        const res = await buildAndSend(env);
-        console.log('Posted to Telegram:', res);
+        const res2 = await buildAndSend(env);
+        console.log("Posted to Telegram:", res2);
       } catch (err) {
-        console.error('Error in scheduled job:', err);
+        console.error("Error in scheduled job:", err);
       }
     })());
   },
-
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
-
-    // Serve UI files
-    if (path === '/' || path === '/index.html') {
-      // Serve the UI content directly
+    if (path === "/" || path === "/index.html") {
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Education Bot Control Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"><\/script>
     <style>
         .loading { display: none; }
         .loading.active { display: block; }
@@ -618,37 +550,30 @@ export default {
         document.getElementById('generateBtn').addEventListener('click', generateContent);
         document.getElementById('postBtn').addEventListener('click', postContent);
         document.getElementById('updateScheduleBtn').addEventListener('click', updateSchedule);
-    </script>
+    <\/script>
 </body>
 </html>`;
-      return new Response(html, { 
-        headers: { 
-          'Content-Type': 'text/html',
-          'Cache-Control': 'public, max-age=3600'
-        } 
+      return new Response(html, {
+        headers: {
+          "Content-Type": "text/html",
+          "Cache-Control": "public, max-age=3600"
+        }
       });
     }
-
-    // API Endpoints
-    if (path.startsWith('/api/')) {
-      // Check admin token for all API endpoints
-      const adminToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (path.startsWith("/api/")) {
+      const adminToken = request.headers.get("Authorization")?.replace("Bearer ", "");
       if (!adminToken || adminToken !== env.ADMIN_TOKEN) {
-        return new Response('Unauthorized', { status: 401 });
+        return new Response("Unauthorized", { status: 401 });
       }
-
-      if (path === '/api/generate' && request.method === 'POST') {
+      if (path === "/api/generate" && request.method === "POST") {
         try {
-          // Validate request body
           const { subject, market, model } = await request.json();
           if (!subject || !market || !model) {
-            return new Response(JSON.stringify({ error: 'Missing required fields: subject, market, and model are required' }), {
+            return new Response(JSON.stringify({ error: "Missing required fields: subject, market, and model are required" }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-
-          // Generate detailed prompt with formatting instructions
           const prompt = `Create a beautifully formatted educational guide about ${subject} for ${market} traders.
 
           Structure the content as follows:
@@ -683,68 +608,55 @@ export default {
           - Bullet points and numbered lists
           - Important points highlighted in bold
           - Warning sections for critical points`;
-
-          let content = '';
+          let content = "";
           if (env.OPENROUTER_API_KEY) {
             try {
               content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
               if (!content) {
-                throw new Error('No content generated');
+                throw new Error("No content generated");
               }
-              
-              // Additional formatting for Telegram
-              content = content
-                .replace(/\n\s*\n/g, '\n\n') // Standardize spacing
-                .replace(/•/g, '•') // Standardize bullet points
-                .replace(/---/g, '\n━━━━━━━━━━\n') // Nice dividers
-                .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
-                .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
-                .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
+              content = content.replace(/\n\s*\n/g, "\n\n").replace(/•/g, "\u2022").replace(/---/g, "\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n").replace(/\*(.*?)\*/g, "<b>$1</b>").replace(/_(.*?)_/g, "<i>$1</i>").replace(/~(.*?)~/g, "<u>$1</u>");
             } catch (aiError) {
-              console.error('AI generation error:', aiError);
-              // Fallback to template if AI fails
+              console.error("AI generation error:", aiError);
               content = fallbackText(market);
             }
           } else {
-            // If no API key, use fallback
             content = fallbackText(market);
           }
-
           return new Response(JSON.stringify({ content }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
-          console.error('Generation error:', error);
-          return new Response(JSON.stringify({ 
-            error: 'Failed to generate content: ' + (error.message || 'Unknown error') 
+          console.error("Generation error:", error);
+          return new Response(JSON.stringify({
+            error: "Failed to generate content: " + (error.message || "Unknown error")
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      if (path === '/api/post' && request.method === 'POST') {
+      if (path === "/api/post" && request.method === "POST") {
         try {
           const { content } = await request.json();
-          const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
+          const imgUrl = getUnsplashImageUrl(["trading", "finance"]);
           await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, content, imgUrl);
           return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Return 404 for unknown API endpoints
-      return new Response('Not Found', { status: 404 });
+      return new Response("Not Found", { status: 404 });
     }
-
-    // Return 404 for unknown paths
-    return new Response('Not Found', { status: 404 });
+    return new Response("Not Found", { status: 404 });
   }
 };
+export {
+  index_default as default
+};
+//# sourceMappingURL=index.js.map
