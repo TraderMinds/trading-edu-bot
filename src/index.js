@@ -44,16 +44,30 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
 }
 
 async function generateTextWithOpenRouter(prompt, apiKey) {
-  // Best-effort compatible call with an OpenAI-like response shape.
-  // If OpenRouter's API shape differs, update this function accordingly.
+  if (!apiKey) {
+    throw new Error('OpenRouter API key is required');
+  }
+
   const url = 'https://api.openrouter.ai/v1/chat/completions';
   const body = {
-    model: 'gpt-4o-mini',
+    model: 'openai/gpt-4', // Using GPT-4 for higher quality content
     messages: [
-      { role: 'system', content: 'You are an expert trading educator. Produce a short educational tip for traders in crypto and forex (approx 2-4 sentences) and add a 1-line actionable takeaway.' },
+      { 
+        role: 'system', 
+        content: `You are an expert trading educator specializing in forex and cryptocurrency markets. 
+        Create comprehensive, well-structured educational content for traders that includes:
+        1. A clear introduction to the topic
+        2. Detailed explanation with examples
+        3. Common pitfalls to avoid
+        4. Advanced tips and strategies
+        5. Multiple actionable takeaways
+        Format the content with proper paragraphs and bullet points where appropriate.
+        Minimum length should be 500 words.`
+      },
       { role: 'user', content: prompt }
     ],
-    max_tokens: 250
+    max_tokens: 1500, // Increased token limit for longer content
+    temperature: 0.7 // Balanced between creativity and consistency
   };
 
   const res = await fetch(url, {
@@ -67,45 +81,147 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
 
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`OpenRouter text generation failed: ${res.status} ${txt}`);
+    console.error('OpenRouter API error:', txt);
+    throw new Error(`API error (${res.status}): ${txt}`);
   }
 
-  const json = await res.json();
-  // Try common response shapes
-  if (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) {
-    return json.choices[0].message.content.trim();
+  try {
+    const json = await res.json();
+    
+    // Try common response shapes
+    if (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) {
+      return json.choices[0].message.content.trim();
+    }
+    if (json.output) return String(json.output).trim();
+    if (json.text) return String(json.text).trim();
+    
+    // If no known response shape matches, log the response and throw error
+    console.error('Unexpected API response:', JSON.stringify(json));
+    throw new Error('Unexpected response format from API');
+  } catch (parseError) {
+    console.error('Failed to parse API response:', parseError);
+    throw new Error('Failed to parse API response');
   }
-  if (json.output) return String(json.output).trim();
-  if (json.text) return String(json.text).trim();
-  return JSON.stringify(json);
 }
 
 function fallbackText(topic) {
   const tips = [
-    // Risk Management Tips
-    `Tip: Always define your risk per trade. For ${topic}, use a fixed % of your account and stick to it. Takeaway: risk management preserves capital.`,
-    `Tip: Never risk more than 1-2% of your capital on a single ${topic} trade. Small losses keep you in the game. Takeaway: small risks lead to long-term survival.`,
-    `Tip: Set your stop loss before entering any ${topic} trade. Know your exit before your entry. Takeaway: planning prevents emotional decisions.`,
-    
-    // Technical Analysis Tips
-    `Tip: Use trend alignment across timeframes when trading ${topic}. Align daily and 1-hour trends before entering. Takeaway: trade with the trend, not against it.`,
-    `Tip: Combine price action with a momentum indicator for ${topic}. Let the indicator confirm, not dictate. Takeaway: confirmation reduces false signals.`,
-    `Tip: Look for key support/resistance levels in ${topic} markets. These levels often lead to reversals or breakouts. Takeaway: respect market structure.`,
-    
-    // Psychology Tips
-    `Tip: Keep a trading journal for your ${topic} trades. Document entries, exits, and emotions. Takeaway: self-awareness improves performance.`,
-    `Tip: Don't chase ${topic} trades you've missed. There will always be another opportunity. Takeaway: patience beats FOMO.`,
-    `Tip: After a losing streak in ${topic}, reduce your position size. Build back confidence gradually. Takeaway: protect your psychology.`,
-    
-    // Strategy Tips
-    `Tip: In ${topic} trading, focus on high-probability setups only. Quality beats quantity every time. Takeaway: wait for the perfect setup.`,
-    `Tip: Use multiple timeframe analysis for ${topic}. Higher timeframes show trend, lower timeframes show entry. Takeaway: context matters.`,
-    `Tip: When trading ${topic}, always consider market correlation. Related markets can confirm or contradict your thesis. Takeaway: markets are connected.`,
-    
-    // Market Specific
-    `Tip: In ${topic === 'crypto' ? 'crypto markets, watch Bitcoin dominance' : 'forex, monitor USD strength'}. It affects all other trades. Takeaway: follow the market leader.`,
-    `Tip: For ${topic} trading, weekends can gap ${topic === 'crypto' ? 'significantly' : 'in major news'}. Plan your positions accordingly. Takeaway: manage weekend risk.`,
-    `Tip: ${topic === 'crypto' ? 'Exchange security matters. Use reputable platforms and secure your keys.' : 'Forex pairs have personality. Learn their typical ranges and behaviors.'} Takeaway: know your market.`
+    // Comprehensive Risk Management Guide
+    `📊 Complete Guide to Risk Management in ${topic} Trading
+
+Understanding risk management is crucial for long-term success in ${topic} trading. Let's break down the key components and strategies for effective risk management.
+
+1. Position Sizing Fundamentals
+- Never risk more than 1-2% of your total capital on a single trade
+- Calculate position size based on your stop loss and risk percentage
+- Adjust position size based on market volatility and correlation risk
+
+2. Stop Loss Strategy
+- Always set your stop loss before entering a trade
+- Place stops at technical levels that invalidate your trade thesis
+- Consider using time-based stops for trending markets
+- Add buffer for market volatility and spread
+
+3. Risk-Reward Optimization
+- Aim for minimum 1:2 risk-reward ratio
+- Scale position sizes based on probability of success
+- Consider reducing risk after consecutive losses
+- Increase position size gradually after proven success
+
+4. Portfolio Risk Management
+- Monitor correlation between different ${topic} pairs/assets
+- Limit total portfolio risk to 5-6% at any time
+- Diversify across different strategies and timeframes
+- Keep reserve capital for high-probability setups
+
+5. Implementation Steps
+a) Before the Trade:
+   - Calculate maximum position size
+   - Identify clear stop loss level
+   - Define multiple profit targets
+   - Check correlation with existing positions
+
+b) During the Trade:
+   - Monitor price action at key levels
+   - Use trailing stops in trending markets
+   - Scale out at predetermined levels
+   - Adjust stops to breakeven when possible
+
+c) After the Trade:
+   - Document entry, exit, and reasoning
+   - Calculate actual vs. expected risk-reward
+   - Review for improvement opportunities
+   - Update trading journal
+
+Key Takeaways:
+1. Consistent position sizing is non-negotiable
+2. Always know your maximum loss before entering
+3. Use a trading journal to track and improve
+4. Scale positions based on market conditions
+5. Review and adjust your risk strategy regularly
+
+Remember: Professional traders focus on risk management first, profits second. Your primary goal should be capital preservation, which enables long-term participation in the markets.`,
+
+    // Comprehensive Technical Analysis Guide
+    `📈 Mastering Technical Analysis in ${topic} Trading
+
+A comprehensive approach to technical analysis combines multiple timeframes and indicators to identify high-probability trading opportunities. Here's your complete guide:
+
+1. Multiple Timeframe Analysis
+- Higher timeframes (Daily/Weekly): Identify primary trend
+- Medium timeframes (4H/1H): Find trading setups
+- Lower timeframes (15M/5M): Fine-tune entries
+- Always align trades with higher timeframe trend
+
+2. Key Technical Tools
+a) Price Action:
+   - Support and resistance levels
+   - Trend lines and channels
+   - Chart patterns
+   - Candlestick formations
+
+b) Indicators:
+   - Trend: Moving averages, MACD
+   - Momentum: RSI, Stochastic
+   - Volume: OBV, Volume Profile
+   - Volatility: Bollinger Bands, ATR
+
+3. Trading Strategy Integration
+- Combine price action with indicator confirmation
+- Use volume to validate breakouts
+- Monitor market structure for trend changes
+- Implement multiple confirmation signals
+
+4. Advanced Concepts
+- Order flow analysis
+- Market profile and volume profile
+- Fibonacci retracements and extensions
+- Elliot Wave Theory basics
+
+5. Practical Implementation
+Step 1: Market Analysis
+- Check higher timeframe trend
+- Identify key support/resistance
+- Note significant price levels
+
+Step 2: Setup Identification
+- Look for pattern formation
+- Check indicator alignment
+- Confirm with volume
+
+Step 3: Entry Execution
+- Wait for pattern completion
+- Verify indicator confirmation
+- Check risk-reward ratio
+
+Key Takeaways:
+1. Always start with higher timeframe analysis
+2. Use multiple confirmation tools
+3. Volume confirms price action
+4. Patterns repeat across timeframes
+5. Risk management trumps perfect entry
+
+Remember: Technical analysis is a probability tool, not a guarantee. Combine it with proper risk management for best results.`
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
@@ -440,13 +556,44 @@ export default {
 
       if (path === '/api/generate' && request.method === 'POST') {
         try {
+          // Validate request body
           const { subject, market, model } = await request.json();
-          const prompt = `Write a short educational trading tip about ${subject} for ${market} traders. Keep it actionable and friendly.`;
+          if (!subject || !market || !model) {
+            return new Response(JSON.stringify({ error: 'Missing required fields: subject, market, and model are required' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          // Generate detailed prompt
+          const prompt = `Create a comprehensive educational guide about ${subject} for ${market} traders.
+          Include:
+          - Detailed explanation of ${subject} and why it's important in ${market} trading
+          - Specific strategies and techniques related to ${subject}
+          - Real-world examples and scenarios
+          - Common mistakes to avoid
+          - Best practices and implementation tips
+          - Risk management considerations
+          - Key metrics or indicators to monitor
+          - Step-by-step implementation guide`;
 
           let content = '';
           if (env.OPENROUTER_API_KEY) {
-            content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
+            try {
+              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
+              if (!content) {
+                throw new Error('No content generated');
+              }
+              
+              // Format content for Telegram
+              content = content.replace(/\n/g, '\n\n'); // Double spacing for better readability
+            } catch (aiError) {
+              console.error('AI generation error:', aiError);
+              // Fallback to template if AI fails
+              content = fallbackText(market);
+            }
           } else {
+            // If no API key, use fallback
             content = fallbackText(market);
           }
 
@@ -454,7 +601,10 @@ export default {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
+          console.error('Generation error:', error);
+          return new Response(JSON.stringify({ 
+            error: 'Failed to generate content: ' + (error.message || 'Unknown error') 
+          }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
           });
