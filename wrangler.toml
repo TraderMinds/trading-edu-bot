@@ -5,4 +5,17 @@ compatibility_date = "2025-09-10"
 # Cron trigger: at minute 0 every hour
 triggers = { crons = ["0 * * * *"] }
 
-# You can also configure environments here if needed
+# Development environment
+[env.dev]
+name = "trading-edu-bot-worker-dev"
+vars = { LOG_LEVEL = "debug" }
+
+# Production environment
+[env.production]
+name = "trading-edu-bot-worker"
+vars = { LOG_LEVEL = "info" }
+
+# You need to set these secrets using wrangler:
+# wrangler secret put TELEGRAM_BOT_TOKEN
+# wrangler secret put TELEGRAM_CHAT_ID
+# wrangler secret put OPENROUTER_API_KEY

@@ -82,9 +82,30 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
 
 function fallbackText(topic) {
   const tips = [
+    // Risk Management Tips
     `Tip: Always define your risk per trade. For ${topic}, use a fixed % of your account and stick to it. Takeaway: risk management preserves capital.`,
+    `Tip: Never risk more than 1-2% of your capital on a single ${topic} trade. Small losses keep you in the game. Takeaway: small risks lead to long-term survival.`,
+    `Tip: Set your stop loss before entering any ${topic} trade. Know your exit before your entry. Takeaway: planning prevents emotional decisions.`,
+    
+    // Technical Analysis Tips
     `Tip: Use trend alignment across timeframes when trading ${topic}. Align daily and 1-hour trends before entering. Takeaway: trade with the trend, not against it.`,
-    `Tip: Combine price action with a momentum indicator for ${topic}. Let the indicator confirm, not dictate. Takeaway: confirmation reduces false signals.`
+    `Tip: Combine price action with a momentum indicator for ${topic}. Let the indicator confirm, not dictate. Takeaway: confirmation reduces false signals.`,
+    `Tip: Look for key support/resistance levels in ${topic} markets. These levels often lead to reversals or breakouts. Takeaway: respect market structure.`,
+    
+    // Psychology Tips
+    `Tip: Keep a trading journal for your ${topic} trades. Document entries, exits, and emotions. Takeaway: self-awareness improves performance.`,
+    `Tip: Don't chase ${topic} trades you've missed. There will always be another opportunity. Takeaway: patience beats FOMO.`,
+    `Tip: After a losing streak in ${topic}, reduce your position size. Build back confidence gradually. Takeaway: protect your psychology.`,
+    
+    // Strategy Tips
+    `Tip: In ${topic} trading, focus on high-probability setups only. Quality beats quantity every time. Takeaway: wait for the perfect setup.`,
+    `Tip: Use multiple timeframe analysis for ${topic}. Higher timeframes show trend, lower timeframes show entry. Takeaway: context matters.`,
+    `Tip: When trading ${topic}, always consider market correlation. Related markets can confirm or contradict your thesis. Takeaway: markets are connected.`,
+    
+    // Market Specific
+    `Tip: In ${topic === 'crypto' ? 'crypto markets, watch Bitcoin dominance' : 'forex, monitor USD strength'}. It affects all other trades. Takeaway: follow the market leader.`,
+    `Tip: For ${topic} trading, weekends can gap ${topic === 'crypto' ? 'significantly' : 'in major news'}. Plan your positions accordingly. Takeaway: manage weekend risk.`,
+    `Tip: ${topic === 'crypto' ? 'Exchange security matters. Use reputable platforms and secure your keys.' : 'Forex pairs have personality. Learn their typical ranges and behaviors.'} Takeaway: know your market.`
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
