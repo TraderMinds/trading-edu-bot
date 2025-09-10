@@ -8,9 +8,6 @@ workers_dev = true
 [triggers]
 crons = ["0 * * * *"]
 
-[site]
-bucket = "./src/ui"
-
 [env.dev]
 name = "trading-edu-bot-worker-dev"
 
