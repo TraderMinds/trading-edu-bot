@@ -15,7 +15,18 @@
     </style>
 </head>
 <body class="bg-gray-100 p-8">
-    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+    <div id="auth-section" class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Authentication</h2>
+        <div class="space-y-4">
+            <input type="password" id="admin-token" class="w-full p-2 border rounded" 
+                   placeholder="Enter your admin token">
+            <button id="login-btn" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Login
+            </button>
+        </div>
+    </div>
+
+    <div id="main-content" class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6 hidden">
         <h1 class="text-2xl font-bold mb-6">Trading Education Bot Control Panel</h1>
         
         <!-- Manual Post Generation -->
@@ -32,9 +43,12 @@
                 <div>
                     <label class="block text-sm font-medium mb-2">AI Model</label>
                     <select id="model" class="w-full p-2 border rounded">
-                        <option value="gpt-4o-mini">GPT-4 Mini (Faster)</option>
-                        <option value="gpt-4o">GPT-4 (Better Quality)</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast)</option>
+                        <option value="gpt-4">GPT-4 (High Quality)</option>
                         <option value="claude-2">Claude 2 (Detailed)</option>
+                        <option value="palm2">PaLM 2 (Alternative)</option>
+                        <option value="llama2-70b">Llama 2 70B (Open Source)</option>
+                        <option value="mistral-7b">Mistral 7B (Efficient)</option>
                     </select>
                 </div>
                 
@@ -101,6 +115,50 @@
     <script>
         const API_BASE = '/api';
         let generatedContent = '';
+        let authToken = localStorage.getItem('adminToken');
+        
+        // Check authentication on load
+        if (authToken) {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        }
+        
+        async function authenticate() {
+            const token = document.getElementById('admin-token').value;
+            try {
+                const response = await fetch(`${API_BASE}/auth`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Authentication failed');
+                
+                authToken = token;
+                localStorage.setItem('adminToken', token);
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+            } catch (error) {
+                showStatus('Authentication failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Add auth headers to all API calls
+        async function authenticatedFetch(url, options = {}) {
+            if (!authToken) {
+                throw new Error('Not authenticated');
+            }
+            
+            return fetch(url, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+        }
 
         async function showStatus(message, type = 'success') {
             const status = document.getElementById('status');
