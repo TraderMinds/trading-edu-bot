@@ -96,7 +96,7 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer': 'https://trading-edu-bot-worker.tradermindai.workers.dev',
         'X-Title': 'Trading Education Bot',
-        'X-Model': 'openai/gpt-oss-20b:free'
+        'X-Model': body.model
       },
       body: JSON.stringify(body)
     });
@@ -108,12 +108,7 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
       console.error('OpenRouter API error response:', txt);
       throw new Error(`API error (${res.status}): ${txt}`);
     }
-  } catch (fetchError) {
-    console.error('OpenRouter API fetch error:', fetchError);
-    throw fetchError;
-  }
 
-  try {
     const json = await res.json();
     console.log('OpenRouter API response:', JSON.stringify(json));
     
@@ -139,9 +134,9 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
     // If no known response shape matches, log the response and throw error
     console.error('Unexpected API response shape:', JSON.stringify(json));
     throw new Error('Unexpected response format from OpenRouter API');
-  } catch (parseError) {
-    console.error('Failed to parse API response:', parseError);
-    throw new Error('Failed to parse API response');
+  } catch (error) {
+    console.error('OpenRouter API error:', error);
+    throw error;
   }
 }
 
