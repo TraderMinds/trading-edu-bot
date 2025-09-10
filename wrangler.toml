@@ -1,9 +1,14 @@
 name = "trading-edu-bot-worker"
 main = "src/index.js"
 compatibility_date = "2025-09-10"
+account_id = "f926e63933e4c6bf7eb3eb502955dfc7"
 
-# Cron trigger: at minute 0 every hour
-triggers = { crons = ["0 * * * *"] }
+# Common settings
+workers_dev = true
+
+# Cron trigger
+[triggers]
+crons = ["0 * * * *"]
 
 # Development environment
 [env.dev]
@@ -14,8 +19,3 @@ vars = { LOG_LEVEL = "debug" }
 [env.production]
 name = "trading-edu-bot-worker"
 vars = { LOG_LEVEL = "info" }
-
-# You need to set these secrets using wrangler:
-# wrangler secret put TELEGRAM_BOT_TOKEN
-# wrangler secret put TELEGRAM_CHAT_ID
-# wrangler secret put OPENROUTER_API_KEY
