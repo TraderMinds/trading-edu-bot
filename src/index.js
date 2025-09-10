@@ -6,6 +6,42 @@
 // OPENROUTER_API_KEY - optional (if provided, worker will call OpenRouter for text generation)
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org';
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // ms
+
+// Utility function for delays
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Structured error logging
+function logError(error, context = {}) {
+  console.error(JSON.stringify({
+    error: error.message,
+    stack: error.stack,
+    timestamp: new Date().toISOString(),
+    ...context
+  }));
+}
+
+async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      
+      // Handle rate limits specially
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After') || RETRY_DELAY;
+        await sleep(parseInt(retryAfter) * 1000);
+        continue;
+      }
+      
+      throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await sleep(RETRY_DELAY * Math.pow(2, i)); // Exponential backoff
+    }
+  }
+}
 
 async function generateTextWithOpenRouter(prompt, apiKey) {
   // Best-effort compatible call with an OpenAI-like response shape.

@@ -4,6 +4,17 @@
   "description": "Cloudflare Worker that posts hourly trading education to Telegram",
   "scripts": {
     "start": "wrangler dev --local",
-    "deploy": "wrangler publish"
+    "deploy": "wrangler publish",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.0.0",
+    "prettier": "^2.0.0"
   }
 }
