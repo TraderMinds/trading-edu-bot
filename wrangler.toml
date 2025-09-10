@@ -10,12 +10,27 @@ workers_dev = true
 [triggers]
 crons = ["0 * * * *"]
 
+# Routes for the UI
+routes = [
+  { pattern = "trading-edu-bot.tradermindai.workers.dev", custom_domain = true }
+]
+
 # Development environment
 [env.dev]
 name = "trading-edu-bot-worker-dev"
-vars = { LOG_LEVEL = "debug" }
+vars = { 
+  LOG_LEVEL = "debug",
+  POST_FREQUENCY = "0 * * * *"
+}
 
 # Production environment
 [env.production]
 name = "trading-edu-bot-worker"
-vars = { LOG_LEVEL = "info" }
+vars = { 
+  LOG_LEVEL = "info",
+  POST_FREQUENCY = "0 * * * *"
+}
+
+# Static assets handling
+[site]
+bucket = "./src/ui"
