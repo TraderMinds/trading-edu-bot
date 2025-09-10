@@ -54,15 +54,29 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
     messages: [
       { 
         role: 'system', 
-        content: `You are an expert trading educator specializing in forex and cryptocurrency markets. 
-        Create comprehensive, well-structured educational content for traders that includes:
-        1. A clear introduction to the topic
-        2. Detailed explanation with examples
-        3. Common pitfalls to avoid
-        4. Advanced tips and strategies
-        5. Multiple actionable takeaways
-        Format the content with proper paragraphs and bullet points where appropriate.
-        Minimum length should be 500 words.`
+        content: `You are an expert trading educator specializing in forex and cryptocurrency markets.
+        Create beautifully formatted educational content for Telegram that includes:
+
+        1. An eye-catching title with emojis
+        2. A clear introduction
+        3. Main content sections with subheadings
+        4. Examples and explanations
+        5. Tips and warnings
+        6. Action steps
+        7. Key takeaways
+
+        Formatting Guidelines:
+        - Use HTML tags for formatting (<b>bold</b>, <u>underline</u>, <i>italic</i>)
+        - Use emojis extensively but appropriately
+        - Create clear section breaks with emoji dividers
+        - Use bullet points and numbered lists where appropriate
+        - Format important points in bold
+        - Add relevant emojis for each section
+        - Keep paragraphs short for mobile readability
+        - Use dividers (e.g., ━━━━━━━━━━) between major sections
+
+        Minimum length should be 500 words.
+        Make it visually appealing and easy to read on mobile devices.`
       },
       { role: 'user', content: prompt }
     ],
@@ -107,58 +121,100 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
 function fallbackText(topic) {
   const tips = [
     // Comprehensive Risk Management Guide
-    `📊 Complete Guide to Risk Management in ${topic} Trading
+    `🎯 <b>Ultimate Guide to Risk Management in ${topic} Trading</b> 📊
+⏱ Reading Time: 4 minutes
 
-Understanding risk management is crucial for long-term success in ${topic} trading. Let's break down the key components and strategies for effective risk management.
+━━━━━━━━━━ Introduction ━━━━━━━━━━
 
-1. Position Sizing Fundamentals
-- Never risk more than 1-2% of your total capital on a single trade
-- Calculate position size based on your stop loss and risk percentage
-- Adjust position size based on market volatility and correlation risk
+🔍 Understanding risk management is <b>crucial for long-term success</b> in ${topic} trading. In this comprehensive guide, we'll break down the essential components of professional risk management.
 
-2. Stop Loss Strategy
-- Always set your stop loss before entering a trade
-- Place stops at technical levels that invalidate your trade thesis
-- Consider using time-based stops for trending markets
-- Add buffer for market volatility and spread
+━━━━━━━━━━ Core Principles ━━━━━━━━━━
 
-3. Risk-Reward Optimization
-- Aim for minimum 1:2 risk-reward ratio
-- Scale position sizes based on probability of success
-- Consider reducing risk after consecutive losses
-- Increase position size gradually after proven success
+📌 <b>1. Position Sizing Fundamentals</b>
 
-4. Portfolio Risk Management
-- Monitor correlation between different ${topic} pairs/assets
-- Limit total portfolio risk to 5-6% at any time
-- Diversify across different strategies and timeframes
-- Keep reserve capital for high-probability setups
+• Never risk more than 1-2% per trade
+• Calculate position size based on:
+  ↳ Account balance
+  ↳ Stop loss distance
+  ↳ Market volatility
 
-5. Implementation Steps
-a) Before the Trade:
-   - Calculate maximum position size
-   - Identify clear stop loss level
-   - Define multiple profit targets
-   - Check correlation with existing positions
+⚠️ <b>WARNING:</b> <i>Overleveraging is the #1 reason traders blow their accounts!</i>
 
-b) During the Trade:
-   - Monitor price action at key levels
-   - Use trailing stops in trending markets
-   - Scale out at predetermined levels
-   - Adjust stops to breakeven when possible
+🎯 <b>2. Strategic Stop Loss Placement</b>
 
-c) After the Trade:
-   - Document entry, exit, and reasoning
-   - Calculate actual vs. expected risk-reward
-   - Review for improvement opportunities
-   - Update trading journal
+• Set stops <u>before</u> entering trades
+• Place at key technical levels:
+  ↳ Support/Resistance breaks
+  ↳ Trend line violations
+  ↳ Pattern invalidation points
 
-Key Takeaways:
-1. Consistent position sizing is non-negotiable
-2. Always know your maximum loss before entering
-3. Use a trading journal to track and improve
-4. Scale positions based on market conditions
-5. Review and adjust your risk strategy regularly
+💡 <b>PRO TIP:</b> <i>Add 1-2% buffer for market noise</i>
+
+🔄 <b>3. Risk-Reward Optimization</b>
+
+• Target minimum 1:2 risk-reward ratio
+• Scale positions intelligently:
+  ↳ Reduce size after losses
+  ↳ Increase after verified edge
+  ↳ Match size to setup quality
+
+🏆 <b>WINNING STRATEGY:</b> <i>Start small, scale up with success</i>
+
+📊 <b>4. Portfolio Risk Management</b>
+
+• Monitor correlations between pairs
+• Max portfolio risk: 5-6% total
+• Diversify across:
+  ↳ Different timeframes
+  ↳ Multiple strategies
+  ↳ Uncorrelated assets
+
+⚠️ <b>CRITICAL:</b> <i>Never risk your entire portfolio on correlated positions!</i>
+
+🎯 <b>5. Implementation Checklist</b>
+
+<b>Before Trading:</b>
+✓ Calculate max position size
+✓ Set clear stop loss level
+✓ Define profit targets
+✓ Check correlations
+
+<b>During Trading:</b>
+✓ Monitor price action
+✓ Follow your plan
+✓ No emotional decisions
+
+<b>After Trading:</b>
+✓ Document everything
+✓ Calculate R:R ratio
+✓ Review performance
+✓ Update journal
+
+━━━━━━━━━━ Key Takeaways ━━━━━━━━━━
+
+🎯 <b>Remember These Points:</b>
+
+1️⃣ Position sizing is <u>non-negotiable</u>
+2️⃣ Always know your max loss
+3️⃣ Keep detailed trading records
+4️⃣ Scale positions wisely
+5️⃣ Review and adjust regularly
+
+⭐️ <b>GOLDEN RULE:</b> <i>Protection of capital comes first, profits second!</i>
+
+━━━━━━━━━━ Action Steps ━━━━━━━━━━
+
+📝 <b>Your Next Steps:</b>
+
+1. Calculate your per-trade risk limit
+2. Create a position sizing spreadsheet
+3. Start your trading journal today
+4. Review your last 10 trades
+5. Adjust your risk parameters
+
+🎓 <b>Final Thought:</b> <i>Success in ${topic} trading starts with mastering risk management. Start implementing these principles today!</i>
+
+#Trading #RiskManagement #${topic} #TradingEducation
 
 Remember: Professional traders focus on risk management first, profits second. Your primary goal should be capital preservation, which enables long-term participation in the markets.`,
 
@@ -565,17 +621,41 @@ export default {
             });
           }
 
-          // Generate detailed prompt
-          const prompt = `Create a comprehensive educational guide about ${subject} for ${market} traders.
-          Include:
-          - Detailed explanation of ${subject} and why it's important in ${market} trading
-          - Specific strategies and techniques related to ${subject}
-          - Real-world examples and scenarios
-          - Common mistakes to avoid
-          - Best practices and implementation tips
-          - Risk management considerations
-          - Key metrics or indicators to monitor
-          - Step-by-step implementation guide`;
+          // Generate detailed prompt with formatting instructions
+          const prompt = `Create a beautifully formatted educational guide about ${subject} for ${market} traders.
+
+          Structure the content as follows:
+          1. Title Section:
+             - Eye-catching title with relevant emojis
+             - Brief hook or introduction
+             - Reading time estimate
+
+          2. Main Content:
+             - Detailed explanation of ${subject} and its importance in ${market} trading
+             - Key concepts and principles
+             - Real-world examples with clear explanations
+             - Common mistakes to avoid (with warning emojis)
+             - Pro tips and advanced strategies
+             - Risk management guidelines specific to this topic
+
+          3. Practical Application:
+             - Step-by-step implementation guide
+             - Actionable checklist
+             - Key metrics to monitor
+             - Tools and indicators to use
+
+          4. Closing:
+             - Summary of key points
+             - Action steps
+             - Motivational closing note
+
+          Make it visually appealing with:
+          - Appropriate emojis for each section
+          - Clear formatting (bold, underline, italic)
+          - Dividers between sections
+          - Bullet points and numbered lists
+          - Important points highlighted in bold
+          - Warning sections for critical points`;
 
           let content = '';
           if (env.OPENROUTER_API_KEY) {
@@ -585,8 +665,14 @@ export default {
                 throw new Error('No content generated');
               }
               
-              // Format content for Telegram
-              content = content.replace(/\n/g, '\n\n'); // Double spacing for better readability
+              // Additional formatting for Telegram
+              content = content
+                .replace(/\n\s*\n/g, '\n\n') // Standardize spacing
+                .replace(/•/g, '•') // Standardize bullet points
+                .replace(/---/g, '\n━━━━━━━━━━\n') // Nice dividers
+                .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
+                .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
+                .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
             } catch (aiError) {
               console.error('AI generation error:', aiError);
               // Fallback to template if AI fails
