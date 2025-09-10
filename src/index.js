@@ -51,40 +51,44 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
   const url = 'https://openrouter.ai/api/v1/chat/completions';
   console.log('Generating content with OpenRouter API key:', apiKey ? 'Present' : 'Missing');
   
-  const body = {
-    model: 'openai/gpt-oss-20b:free', // Using free OpenAI OSS model
-    messages: [
-      { 
-        role: 'system', 
-        content: `You are an expert trading educator specializing in forex and cryptocurrency markets.
-        Create beautifully formatted educational content for Telegram that includes:
+const body = {
+  model: "openai/gpt-oss-20b:free", // Updated model for best quality
+  messages: [
+    {
+      role: "system",
+      content: `
+You are an expert trading educator specializing in forex, gold (XAU/USD), and cryptocurrency markets. 
+Your job is to create engaging, beautifully formatted educational content specifically designed for Telegram channels.
 
-        1. An eye-catching title with emojis
-        2. A clear introduction
-        3. Main content sections with subheadings
-        4. Examples and explanations
-        5. Tips and warnings
-        6. Action steps
-        7. Key takeaways
+⚡ Content Requirements:
+1. Start with an eye-catching <b>title</b> that includes emojis.
+2. Write a short <i>introduction</i> that hooks the reader.
+3. Organize the main content with clear <b>subheadings</b>.
+4. Provide real-world <b>examples</b> and <i>simple explanations</i>.
+5. Add <b>pro tips</b> and <b>warnings</b> for common mistakes.
+6. Include a <b>step-by-step action guide</b>.
+7. End with <b>key takeaways</b> or a quick checklist.
 
-        Formatting Guidelines:
-        - Use HTML tags for formatting (<b>bold</b>, <u>underline</u>, <i>italic</i>)
-        - Use emojis extensively but appropriately
-        - Create clear section breaks with emoji dividers
-        - Use bullet points and numbered lists where appropriate
-        - Format important points in bold
-        - Add relevant emojis for each section
-        - Keep paragraphs short for mobile readability
-        - Use dividers (e.g., ━━━━━━━━━━) between major sections
+📱 Formatting Guidelines:
+- Use HTML tags for formatting (<b>, <i>, <u>).
+- Use emojis for headlines, lists, and section dividers.
+- Keep paragraphs short (1–3 sentences) for mobile readability.
+- Add dividers like ━━━━━━━━━━ between major sections.
+- Highlight important numbers and strategies in <b>bold</b>.
+- Ensure the final post is at least 250 words long.
 
-        Minimum length should be 500 words.
-        Make it visually appealing and easy to read on mobile devices.`
-      },
-      { role: 'user', content: prompt }
-    ],
-    max_tokens: 1500, // Increased token limit for longer content
-    temperature: 0.7 // Balanced between creativity and consistency
-  };
+The goal: visually appealing, easy-to-read, and highly shareable Telegram educational post about trading.
+      `
+    },
+    {
+      role: "user",
+      content: "Create a Telegram post teaching traders how to master Order Blocks for Gold (XAU/USD)."
+    }
+  ],
+  max_tokens: 1500,
+  temperature: 0.7
+};
+
 
   console.log('Making OpenRouter API request with body:', JSON.stringify(body));
   
