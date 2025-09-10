@@ -313,24 +313,47 @@ function getUnsplashImageUrl(keywords) {
 
 async function postToTelegram(botToken, chatId, caption, imageUrl) {
   const endpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendPhoto`;
+  
+  // Log the request details (excluding sensitive data)
+  console.log('Sending to Telegram:', {
+    endpoint: endpoint.replace(botToken, '[REDACTED]'),
+    captionLength: caption?.length,
+    imageUrl
+  });
+
+  // Validate parameters
+  if (!botToken || !chatId) {
+    throw new Error('Missing required Telegram parameters');
+  }
+
+  // Prepare request body
   const body = {
     chat_id: chatId,
     photo: imageUrl,
-    caption,
+    caption: caption || '',
     parse_mode: 'HTML'
   };
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  try {
+    const res = await fetchWithRetry(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
 
-  const txt = await res.text();
-  if (!res.ok) {
-    throw new Error(`Telegram API error: ${res.status} ${txt}`);
+    const txt = await res.text();
+    if (!res.ok) {
+      console.error('Telegram API error response:', {
+        status: res.status,
+        response: txt
+      });
+      throw new Error(`Telegram API error: ${res.status} ${txt}`);
+    }
+    return txt;
+  } catch (error) {
+    console.error('Error posting to Telegram:', error);
+    throw error;
   }
-  return txt;
 }
 
 async function buildAndSend(env) {
@@ -722,13 +745,45 @@ export default {
       if (path === '/api/post' && request.method === 'POST') {
         try {
           const { content } = await request.json();
+          if (!content) {
+            console.error('No content provided in request body');
+            return new Response(JSON.stringify({ error: 'No content provided' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+            console.error('Missing Telegram configuration:', {
+              hasToken: !!env.TELEGRAM_BOT_TOKEN,
+              hasChatId: !!env.TELEGRAM_CHAT_ID
+            });
+            return new Response(JSON.stringify({ error: 'Telegram configuration missing' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          console.log('Posting to Telegram...', {
+            contentLength: content.length,
+            hasToken: !!env.TELEGRAM_BOT_TOKEN,
+            hasChatId: !!env.TELEGRAM_CHAT_ID
+          });
+
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
-          await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, content, imgUrl);
-          return new Response(JSON.stringify({ success: true }), {
+          const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, content, imgUrl);
+          
+          console.log('Telegram API response:', result);
+          
+          return new Response(JSON.stringify({ success: true, result }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
+          console.error('Post error:', error);
+          return new Response(JSON.stringify({ 
+            error: error.message,
+            details: error.stack 
+          }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
           });
