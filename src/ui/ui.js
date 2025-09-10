@@ -90,8 +90,29 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <script>
-        const API_BASE = '';
+        const API_BASE = '/api';
         let generatedContent = '';
+
+        // Check for saved token
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+            }
+        });
+
+        // Handle login
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const token = document.getElementById('admin-token').value;
+            if (!token) {
+                showStatus('Please enter an admin token', 'error');
+                return;
+            }
+            localStorage.setItem('adminToken', token);
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        });
 
         async function showStatus(message, type = 'success') {
             const status = document.getElementById('status');
@@ -101,19 +122,26 @@ const htmlContent = `<!DOCTYPE html>
             setTimeout(() => status.classList.add('hidden'), 5000);
         }
 
-        async function generateContent() {
+            async function generateContent() {
             const subject = document.getElementById('subject').value;
             const market = document.getElementById('market').value;
             const model = document.getElementById('model').value;
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                showStatus('Please enter your admin token first', 'error');
+                return;
+            }
             
             try {
                 const response = await fetch(\`\${API_BASE}/generate\`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
                     body: JSON.stringify({ subject, market, model })
-                });
-
-                if (!response.ok) throw new Error('Generation failed');
+                });                if (!response.ok) throw new Error('Generation failed');
 
                 const data = await response.json();
                 generatedContent = data.content;
@@ -126,20 +154,27 @@ const htmlContent = `<!DOCTYPE html>
             }
         }
 
-        async function postContent() {
+            async function postContent() {
             if (!generatedContent) {
                 showStatus('Please generate content first', 'error');
+                return;
+            }
+
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                showStatus('Please enter your admin token first', 'error');
                 return;
             }
 
             try {
                 const response = await fetch(\`\${API_BASE}/post\`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
                     body: JSON.stringify({ content: generatedContent })
-                });
-
-                if (!response.ok) throw new Error('Posting failed');
+                });                if (!response.ok) throw new Error('Posting failed');
 
                 showStatus('Posted successfully to Telegram');
                 generatedContent = '';
@@ -149,17 +184,24 @@ const htmlContent = `<!DOCTYPE html>
             }
         }
 
-        async function updateSchedule() {
+            async function updateSchedule() {
             const schedule = document.getElementById('schedule').value;
+            
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                showStatus('Please enter your admin token first', 'error');
+                return;
+            }
 
             try {
                 const response = await fetch(\`\${API_BASE}/schedule\`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
                     body: JSON.stringify({ schedule })
-                });
-
-                if (!response.ok) throw new Error('Schedule update failed');
+                });                if (!response.ok) throw new Error('Schedule update failed');
 
                 showStatus('Schedule updated successfully');
             } catch (error) {

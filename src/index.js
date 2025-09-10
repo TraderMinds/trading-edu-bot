@@ -184,6 +184,67 @@ export default {
   },
 
   async fetch(request, env) {
-    return new Response('Trading edu bot worker — scheduled posts only.');
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Serve UI files
+    if (path === '/' || path === '/index.html') {
+      const html = await fetch(new URL('./ui/index.html', import.meta.url)).then(res => res.text());
+      return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+    }
+
+    // API Endpoints
+    if (path.startsWith('/api/')) {
+      // Check admin token for all API endpoints
+      const adminToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+      if (!adminToken || adminToken !== env.ADMIN_TOKEN) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+
+      if (path === '/api/generate' && request.method === 'POST') {
+        try {
+          const { subject, market, model } = await request.json();
+          const prompt = `Write a short educational trading tip about ${subject} for ${market} traders. Keep it actionable and friendly.`;
+
+          let content = '';
+          if (env.OPENROUTER_API_KEY) {
+            content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
+          } else {
+            content = fallbackText(market);
+          }
+
+          return new Response(JSON.stringify({ content }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      if (path === '/api/post' && request.method === 'POST') {
+        try {
+          const { content } = await request.json();
+          const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
+          await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, content, imgUrl);
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Return 404 for unknown API endpoints
+      return new Response('Not Found', { status: 404 });
+    }
+
+    // Return 404 for unknown paths
+    return new Response('Not Found', { status: 404 });
   }
 };
