@@ -1,0 +1,8 @@
+name = "trading-edu-bot-worker"
+main = "src/index.js"
+compatibility_date = "2025-09-10"
+
+# Cron trigger: at minute 0 every hour
+triggers = { crons = ["0 * * * *"] }
+
+# You can also configure environments here if needed

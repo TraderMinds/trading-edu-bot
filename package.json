@@ -1,0 +1,9 @@
+{
+  "name": "trading-edu-bot-worker",
+  "version": "0.1.0",
+  "description": "Cloudflare Worker that posts hourly trading education to Telegram",
+  "scripts": {
+    "start": "wrangler dev --local",
+    "deploy": "wrangler publish"
+  }
+}
