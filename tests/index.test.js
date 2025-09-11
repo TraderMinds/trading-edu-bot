@@ -2,6 +2,8 @@
 const worker = require('../src/index.js');
 
 describe('Trading Education Bot', () => {
+  // Mock data for future test implementations
+  /*
   const mockEnv = {
     TELEGRAM_BOT_TOKEN: 'test-token',
     TELEGRAM_CHAT_ID: 'test-chat-id',
@@ -26,6 +28,7 @@ describe('Trading Education Bot', () => {
     text: () => Promise.resolve('Rate limited'),
     headers: new Map([['Retry-After', '30']])
   };
+  */
 
   beforeEach(() => {
     global.fetch = jest.fn();

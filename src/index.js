@@ -136,12 +136,13 @@ async function saveSubjectsQueue(env, queue) {
   }
 }
 
-async function addSubjectToQueue(env, subject, market = 'crypto') {
+async function addSubjectToQueue(env, subject, market = 'crypto', model = 'deepseek/deepseek-chat-v3.1:free') {
   const queue = await getSubjectsQueue(env);
   const newItem = {
     id: Date.now().toString(),
     subject: subject.trim(),
     market,
+    model,
     addedAt: new Date().toISOString(),
     processed: false
   };
@@ -150,7 +151,7 @@ async function addSubjectToQueue(env, subject, market = 'crypto') {
   return newItem;
 }
 
-async function bulkAddSubjectsToQueue(env, subjects, market = 'crypto') {
+async function bulkAddSubjectsToQueue(env, subjects, market = 'crypto', model = 'deepseek/deepseek-chat-v3.1:free') {
   const queue = await getSubjectsQueue(env);
   const results = { added: [], failed: [] };
   const timestamp = new Date().toISOString();
@@ -195,6 +196,7 @@ async function bulkAddSubjectsToQueue(env, subjects, market = 'crypto') {
       id: (idCounter++).toString(),
       subject: trimmedSubject,
       market,
+      model,
       addedAt: timestamp,
       processed: false
     };
@@ -217,30 +219,24 @@ async function getNextSubject(env) {
   return queue.find(item => !item.processed) || null;
 }
 
-async function markSubjectProcessed(env, subjectId) {
-  const queue = await getSubjectsQueue(env);
-  const item = queue.find(q => q.id === subjectId);
-  if (item) {
-    item.processed = true;
-    item.processedAt = new Date().toISOString();
-    await saveSubjectsQueue(env, queue);
-  }
-}
-
 async function removeSubjectFromQueue(env, subjectId) {
   const queue = await getSubjectsQueue(env);
   const filteredQueue = queue.filter(item => item.id !== subjectId);
   await saveSubjectsQueue(env, filteredQueue);
 }
 
-// Structured error logging
-function logError(error, context = {}) {
-  console.error(JSON.stringify({
-    error: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString(),
-    ...context
-  }));
+async function updateQueueItem(env, subjectId, subject, market, model) {
+  const queue = await getSubjectsQueue(env);
+  const item = queue.find(q => q.id === subjectId);
+  if (item) {
+    item.subject = subject.trim();
+    item.market = market || item.market;
+    item.model = model || item.model || 'deepseek/deepseek-chat-v3.1:free';
+    item.updatedAt = new Date().toISOString();
+    await saveSubjectsQueue(env, queue);
+  } else {
+    throw new Error('Queue item not found');
+  }
 }
 
 async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
@@ -270,7 +266,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
   }
 
   const url = 'https://openrouter.ai/api/v1/chat/completions';
-  console.log('Generating content with OpenRouter:', {
+  console.warn('Generating content with OpenRouter:', {
     hasApiKey: !!apiKey,
     model: model,
     promptLength: prompt.length
@@ -417,7 +413,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
     presence_penalty: 0.2 // Encourage topic diversity
   };
 
-  console.log('Making OpenRouter API request with body:', JSON.stringify(body));
+  console.warn('Making OpenRouter API request with body:', JSON.stringify(body));
   
   try {
     // Add timeout to prevent hanging
@@ -439,7 +435,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
     
     clearTimeout(timeoutId);
 
-    console.log('OpenRouter API response status:', res.status);
+    console.warn('OpenRouter API response status:', res.status);
     
     if (!res.ok) {
       const txt = await res.text();
@@ -448,24 +444,24 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
     }
 
     const json = await res.json();
-    console.log('OpenRouter API response:', JSON.stringify(json));
+    console.warn('OpenRouter API response:', JSON.stringify(json));
     
     // Handle OpenRouter response format
     if (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) {
       const content = json.choices[0].message.content.trim();
-      console.log('Generated content length:', content.length);
+      console.warn('Generated content length:', content.length);
       return content;
     }
     
     // Try alternative response shapes
     if (json.output) {
       const content = String(json.output).trim();
-      console.log('Generated content length (output):', content.length);
+      console.warn('Generated content length (output):', content.length);
       return content;
     }
     if (json.text) {
       const content = String(json.text).trim();
-      console.log('Generated content length (text):', content.length);
+      console.warn('Generated content length (text):', content.length);
       return content;
     }
     
@@ -494,7 +490,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
 function sanitizeForTelegram(content) {
   if (!content) return '';
   
-  console.log('Sanitizing content for Telegram, original length:', content.length);
+  console.warn('Sanitizing content for Telegram, original length:', content.length);
   
   // First, let's fix any obvious HTML issues and convert unsupported tags
   let sanitized = content
@@ -537,12 +533,12 @@ function sanitizeForTelegram(content) {
     .replace(/\s*\n\s*/g, '\n')
     .trim();
   
-  console.log('Content sanitized for Telegram, new length:', sanitized.length);
+  console.warn('Content sanitized for Telegram, new length:', sanitized.length);
   
   // Log any remaining potentially problematic tags for debugging
   const remainingTags = sanitized.match(/<[^>]+>/g);
   if (remainingTags) {
-    console.log('Remaining HTML tags after sanitization:', remainingTags);
+    console.warn('Remaining HTML tags after sanitization:', remainingTags);
   }
   
   return sanitized;
@@ -561,7 +557,7 @@ function fixUnmatchedTags(content) {
     const openingMatches = fixed.match(new RegExp(`<${tag}\\b[^>]*>`, 'gi')) || [];
     const closingMatches = fixed.match(new RegExp(`</${tag}>`, 'gi')) || [];
     
-    console.log(`Tag ${tag}: ${openingMatches.length} opening, ${closingMatches.length} closing`);
+    console.warn(`Tag ${tag}: ${openingMatches.length} opening, ${closingMatches.length} closing`);
     
     // If unmatched, remove the problematic tags
     if (openingMatches.length !== closingMatches.length) {
@@ -576,11 +572,6 @@ function fixUnmatchedTags(content) {
   return fixed;
 }
 
-function fallbackText(topic) {
-  // No fallback content - just indicate API is not working
-  return null;
-}
-
 function getUnsplashImageUrl(keywords) {
   // Use Unsplash Source to get a relevant free image. No API key required.
   // Example: https://source.unsplash.com/1600x900/?crypto,finance
@@ -590,14 +581,14 @@ function getUnsplashImageUrl(keywords) {
 
 // Validate image URL before sending to Telegram
 async function validateImageUrl(imageUrl) {
-  console.log('Validating image URL:', imageUrl);
+  console.warn('Validating image URL:', imageUrl);
   
   try {
     const response = await fetch(imageUrl, { method: 'HEAD' });
     const contentType = response.headers.get('content-type');
     const contentLength = response.headers.get('content-length');
     
-    console.log('Image validation result:', {
+    console.warn('Image validation result:', {
       status: response.status,
       contentType,
       contentLength,
@@ -652,7 +643,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
     console.warn('Unusual chat ID format:', chatId);
   }
 
-  console.log('Starting two-step posting process: image first, then full content as reply');
+  console.warn('Starting two-step posting process: image first, then full content as reply');
 
   // Step 1: Send image with minimal caption
   let imageMessageId;
@@ -682,7 +673,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
       parse_mode: 'HTML'
     };
 
-    console.log('Sending image:', {
+    console.warn('Sending image:', {
       endpoint: photoEndpoint.replace(botToken, '[REDACTED]'),
       finalImageUrl: finalImageUrl?.substring(0, 50) + '...',
       chatId: chatId
@@ -707,7 +698,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
     // Parse response to get message ID
     const imageResponseData = JSON.parse(imageResText);
     imageMessageId = imageResponseData.result.message_id;
-    console.log('Image posted successfully, message ID:', imageMessageId);
+    console.warn('Image posted successfully, message ID:', imageMessageId);
 
   } catch (imageError) {
     console.error('Image posting failed, falling back to text-only:', imageError.message);
@@ -732,7 +723,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
       
       const textResText = await textRes.text();
       if (textRes.ok) {
-        console.log('Text-only fallback successful');
+        console.warn('Text-only fallback successful');
         return textResText;
       } else {
         throw new Error(`Text fallback also failed: ${textRes.status} - ${textResText}`);
@@ -754,7 +745,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
       reply_to_message_id: imageMessageId
     };
 
-    console.log('Sending full content as reply:', {
+    console.warn('Sending full content as reply:', {
       endpoint: messageEndpoint.replace(botToken, '[REDACTED]'),
       contentLength: caption?.length,
       replyToMessageId: imageMessageId
@@ -775,7 +766,7 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
       console.error('Reply message failed:', replyResText);
       
       // Try sending without HTML if parsing fails
-      console.log('Attempting reply without HTML formatting');
+      console.warn('Attempting reply without HTML formatting');
       const plainTextBody = {
         chat_id: chatId,
         text: caption.replace(/<[^>]*>/g, '') || 'Trading Education Content',
@@ -793,19 +784,19 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
       
       const plainResText = await plainRes.text();
       if (plainRes.ok) {
-        console.log('Plain text reply successful');
+        console.warn('Plain text reply successful');
         return plainResText;
       } else {
         throw new Error(`Reply failed with HTML and plain text: ${replyResText}, ${plainResText}`);
       }
     }
 
-    console.log('Two-step posting completed successfully');
+    console.warn('Two-step posting completed successfully');
     return replyResText;
 
   } catch (replyError) {
     console.error('Reply message failed:', replyError.message);
-    console.log('Image was posted successfully, but reply failed');
+    console.warn('Image was posted successfully, but reply failed');
     // Return success since image was posted, even if reply failed
     return `Image posted successfully (ID: ${imageMessageId}), but reply failed: ${replyError.message}`;
   }
@@ -821,7 +812,7 @@ async function buildAndSend(env) {
   
   let topic, prompt;
   if (nextSubject) {
-    console.log('Processing queued subject:', nextSubject);
+    console.warn('Processing queued subject:', nextSubject);
     topic = nextSubject.market;
     prompt = `Create an extensive, comprehensive educational guide about "${nextSubject.subject}" for ${nextSubject.market} traders. 
 
@@ -859,19 +850,20 @@ Keep it highly actionable and professional for serious traders.`;
   let caption = '';
   if (env.OPENROUTER_API_KEY) {
     try {
-      // Use a balanced model for scheduled posts
-      const scheduledModel = 'openai/gpt-oss-20b:free';
+      // Use model from queue item or default for scheduled posts
+      const scheduledModel = nextSubject?.model || 'deepseek/deepseek-chat-v3.1:free';
+      console.warn('Using AI model for scheduled post:', scheduledModel);
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
     } catch (err) {
       // AI call failed - don't send anything
       console.error('OpenRouter call failed:', err.message);
-      console.log('No fallback content available - skipping post');
+      console.warn('No fallback content available - skipping post');
       throw new Error(`AI API not working: ${err.message}`);
     }
   } else {
     // No API key - don't send anything
     console.error('No OpenRouter API key configured');
-    console.log('No API key available - skipping post');
+    console.warn('No API key available - skipping post');
     throw new Error('OpenRouter API key not configured');
   }
 
@@ -894,8 +886,8 @@ Keep it highly actionable and professional for serious traders.`;
   // Compose image query keywords
   const imgUrl = getUnsplashImageUrl([topic, 'trading', 'finance']);
 
-  console.log('Final caption length:', caption.length);
-  console.log('Image URL:', imgUrl);
+  console.warn('Final caption length:', caption.length);
+  console.warn('Image URL:', imgUrl);
 
   const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl);
   
@@ -905,7 +897,7 @@ Keep it highly actionable and professional for serious traders.`;
   // Mark subject as processed and remove from queue if it was from queue
   if (nextSubject) {
     await removeSubjectFromQueue(env, nextSubject.id);
-    console.log('Subject processed and removed from queue:', nextSubject.subject);
+    console.warn('Subject processed and removed from queue:', nextSubject.subject);
   }
   
   return sendResult;
@@ -917,7 +909,7 @@ export default {
     ctx.waitUntil((async () => {
       try {
         const res = await buildAndSend(env);
-        console.log('Posted to Telegram:', res);
+        console.warn('Posted to Telegram:', res);
       } catch (err) {
         console.error('Error in scheduled job:', err);
       }
@@ -1088,6 +1080,28 @@ export default {
                         </div>
                         
                         <div class="space-y-4">
+                            <!-- Default Model Selection -->
+                            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <h4 class="text-sm font-medium text-blue-800 mb-3 flex items-center">
+                                    <i class="fas fa-brain mr-2"></i>Default AI Model for Queue Posts
+                                </h4>
+                                <select id="defaultQueueModel" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <optgroup label="🆓 Free Models">
+                                        <option value="openai/gpt-oss-120b:free">⚡ GPT OSS 120B - Most Powerful</option>
+                                        <option value="deepseek/deepseek-chat-v3.1:free" selected>🧠 DeepSeek V3.1 - Advanced Reasoning</option>
+                                        <option value="nvidia/nemotron-nano-9b-v2:free">🔥 NVIDIA Nemotron Nano 9B V2 - Latest</option>
+                                        <option value="openai/gpt-oss-20b:free">🚀 GPT OSS 20B - Fast & Reliable</option>
+                                        <option value="z-ai/glm-4.5-air:free">💨 GLM 4.5 Air - Efficient</option>
+                                        <option value="qwen/qwen3-coder:free">💻 Qwen3 Coder - Code-Optimized</option>
+                                    </optgroup>
+                                    <optgroup label="🌟 Premium Models">
+                                        <option value="openrouter/sonoma-sky-alpha">☁️ Sonoma Sky Alpha - Creative</option>
+                                        <option value="openrouter/sonoma-dusk-alpha">🌅 Sonoma Dusk Alpha - Balanced</option>
+                                    </optgroup>
+                                </select>
+                                <p class="text-xs text-blue-600 mt-2">💡 This model will be used for all new queue posts by default</p>
+                            </div>
+                            
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <div class="flex space-x-4 mb-3">
                                     <input type="text" id="newSubject" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
@@ -1282,14 +1296,37 @@ export default {
                                     <i class="fas fa-calendar-alt mr-1"></i>Posting Schedule
                                 </label>
                                 <select id="schedule" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                                    <option value="0 * * * *">⚡ Every hour</option>
+                                    <!-- Minute-based schedules -->
+                                    <option value="*/5 * * * *">⚡ Every 5 minutes</option>
+                                    <option value="*/10 * * * *">⚡ Every 10 minutes</option>
+                                    <option value="*/15 * * * *">⚡ Every 15 minutes</option>
+                                    <option value="*/20 * * * *">⚡ Every 20 minutes</option>
+                                    <option value="*/30 * * * *">⚡ Every 30 minutes</option>
+                                    <option value="0,30 * * * *">⚡ Every 30 minutes (on the hour)</option>
+                                    
+                                    <!-- Hourly schedules -->
+                                    <option value="0 * * * *" selected>🕐 Every hour</option>
                                     <option value="0 */2 * * *">🕐 Every 2 hours</option>
                                     <option value="0 */4 * * *">🕓 Every 4 hours</option>
                                     <option value="0 */6 * * *">🕕 Every 6 hours</option>
                                     <option value="0 */12 * * *">🌓 Every 12 hours</option>
-                                    <option value="0 0 * * *">🌅 Once per day</option>
+                                    
+                                    <!-- Daily schedules -->
+                                    <option value="0 0 * * *">🌅 Once per day (midnight)</option>
+                                    <option value="0 9 * * *">🌅 Daily at 9:00 AM</option>
+                                    <option value="0 12 * * *">🌅 Daily at 12:00 PM</option>
+                                    <option value="0 18 * * *">🌅 Daily at 6:00 PM</option>
+                                    
+                                    <!-- Weekly schedules -->
                                     <option value="0 0 * * 1">📅 Weekly (Monday)</option>
+                                    <option value="0 9 * * 1">📅 Weekly (Monday 9 AM)</option>
                                 </select>
+                                <div class="mt-2 text-sm text-gray-600">
+                                    <p><i class="fas fa-info-circle mr-1 text-blue-500"></i> 
+                                    <strong>Minute-based schedules</strong> provide high-frequency posting for active engagement.</p>
+                                    <p class="mt-1"><i class="fas fa-exclamation-triangle mr-1 text-amber-500"></i> 
+                                    <strong>Note:</strong> To fully apply schedule changes, update wrangler.toml and redeploy.</p>
+                                </div>
                             </div>
 
                             <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
@@ -1385,6 +1422,64 @@ No errors recorded yet
                 </div>
             </div>
         </div>
+
+        <!-- Edit Queue Item Modal -->
+        <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">Edit Queue Item</h3>
+                    <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <input type="hidden" id="editItemId">
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-gray-700">Subject</label>
+                        <input type="text" id="editItemSubject" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500" 
+                               placeholder="Enter subject">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-700">Market</label>
+                            <select id="editItemMarket" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                                <option value="crypto">📈 Cryptocurrency</option>
+                                <option value="forex">💱 Forex</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-700">AI Model</label>
+                            <select id="editItemModel" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500">
+                                <optgroup label="🆓 Free Models">
+                                    <option value="openai/gpt-oss-120b:free">⚡ GPT OSS 120B</option>
+                                    <option value="deepseek/deepseek-chat-v3.1:free">🧠 DeepSeek V3.1</option>
+                                    <option value="nvidia/nemotron-nano-9b-v2:free">🔥 NVIDIA Nemotron Nano</option>
+                                    <option value="openai/gpt-oss-20b:free">🚀 GPT OSS 20B</option>
+                                    <option value="z-ai/glm-4.5-air:free">💨 GLM 4.5 Air</option>
+                                    <option value="qwen/qwen3-coder:free">💻 Qwen3 Coder</option>
+                                </optgroup>
+                                <optgroup label="🌟 Premium Models">
+                                    <option value="openrouter/sonoma-sky-alpha">☁️ Sonoma Sky Alpha</option>
+                                    <option value="openrouter/sonoma-dusk-alpha">🌅 Sonoma Dusk Alpha</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button id="cancelEdit" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                            Cancel
+                        </button>
+                        <button id="confirmEdit" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                            Update Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1407,6 +1502,7 @@ No errors recorded yet
                 loadQueue(),
                 loadStats(),
                 loadFooterSettings(),
+                loadSchedule(),
                 calculateNextPost()
             ]);
             updateFooterPreview();
@@ -1730,6 +1826,31 @@ No errors recorded yet
             }
         });
 
+        async function loadSchedule() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch(\`\${API_BASE}/schedule\`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('schedule').value = data.schedule || '0 * * * *';
+                } else {
+                    document.getElementById('schedule').value = '0 * * * *';
+                }
+            } catch (error) {
+                console.error('Failed to load schedule:', error);
+                // Set default if loading fails
+                document.getElementById('schedule').value = '0 * * * *';
+            }
+            
+            // Calculate next post time after loading schedule
+            calculateNextPost();
+        }
+
         async function updateSchedule() {
             const schedule = document.getElementById('schedule').value;
             
@@ -1750,7 +1871,17 @@ No errors recorded yet
                 });
 
                 if (!response.ok) throw new Error('Schedule update failed');
-                showStatus('Schedule updated successfully');
+                
+                const data = await response.json();
+                showStatus(\`Schedule updated successfully! \${data.message || ''}\`);
+                
+                // Show warning about manual deployment if provided
+                if (data.warning) {
+                    showNotification(data.warning, 'warning');
+                }
+                
+                // Recalculate next post time
+                calculateNextPost();
             } catch (error) {
                 showStatus(\`Failed to update schedule: \${error.message}\`, 'error');
             }
@@ -1793,15 +1924,35 @@ No errors recorded yet
             }
 
             queueList.innerHTML = queue.map((item, index) => \`
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:shadow-sm transition-shadow card-hover">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-2 mb-1">
+                <div class="p-4 bg-gray-50 rounded-lg border hover:shadow-sm transition-shadow card-hover">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
                             <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
                                 #\${index + 1}
                             </span>
                             <span class="font-medium text-gray-800">\${item.subject}</span>
                         </div>
-                        <div class="flex items-center space-x-3 text-sm text-gray-500">
+                        <div class="flex space-x-2">
+                            <button onclick="editQueueItem('\${item.id}')" 
+                                    class="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition-colors"
+                                    title="Edit model">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="moveSubjectUp('\${item.id}')" 
+                                    class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
+                                    title="Move up">
+                                <i class="fas fa-arrow-up text-xs"></i>
+                            </button>
+                            <button onclick="removeSubject('\${item.id}')" 
+                                    class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition-colors"
+                                    title="Remove">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center space-x-3">
                             <span class="flex items-center">
                                 <i class="fas fa-chart-line mr-1"></i>
                                 \${item.market.charAt(0).toUpperCase() + item.market.slice(1)}
@@ -1811,18 +1962,12 @@ No errors recorded yet
                                 \${new Date(item.addedAt).toLocaleDateString()}
                             </span>
                         </div>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="moveSubjectUp('\${item.id}')" 
-                                class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition-colors"
-                                title="Move up">
-                            <i class="fas fa-arrow-up text-xs"></i>
-                        </button>
-                        <button onclick="removeSubject('\${item.id}')" 
-                                class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition-colors"
-                                title="Remove">
-                            <i class="fas fa-trash text-xs"></i>
-                        </button>
+                        <div class="flex items-center">
+                            <i class="fas fa-brain mr-1 text-purple-500"></i>
+                            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-mono">
+                                \${getModelDisplayName(item.model || 'deepseek/deepseek-chat-v3.1:free')}
+                            </span>
+                        </div>
                     </div>
                 </div>
             \`).join('');
@@ -1831,6 +1976,7 @@ No errors recorded yet
         async function addSubject() {
             const subject = document.getElementById('newSubject').value.trim();
             const market = document.getElementById('newSubjectMarket').value;
+            const model = document.getElementById('defaultQueueModel').value;
             const token = localStorage.getItem('adminToken');
             
             if (!token) {
@@ -1851,7 +1997,7 @@ No errors recorded yet
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
-                    body: JSON.stringify({ subject, market })
+                    body: JSON.stringify({ subject, market, model })
                 });
 
                 if (!response.ok) throw new Error('Failed to add subject');
@@ -1873,6 +2019,7 @@ No errors recorded yet
                 .filter(s => s.length > 0);
             
             const market = document.getElementById('bulkMarket').value;
+            const model = document.getElementById('defaultQueueModel').value;
             const token = localStorage.getItem('adminToken');
             
             if (!token) return;
@@ -1891,7 +2038,7 @@ No errors recorded yet
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
-                    body: JSON.stringify({ subjects, market })
+                    body: JSON.stringify({ subjects, market, model })
                 });
 
                 if (!response.ok) {
@@ -1925,7 +2072,7 @@ No errors recorded yet
                     }
                     
                     // Log full details to console for debugging
-                    console.log('Bulk add failures:', result.failed);
+                    console.warn('Bulk add failures:', result.failed);
                 }
                 
                 showNotification(message, result.added > 0 ? 'success' : 'warning');
@@ -2090,29 +2237,193 @@ No errors recorded yet
             });
         }
 
+        function getModelDisplayName(modelId) {
+            const modelNames = {
+                'openai/gpt-oss-120b:free': 'GPT OSS 120B',
+                'deepseek/deepseek-chat-v3.1:free': 'DeepSeek V3.1',
+                'nvidia/nemotron-nano-9b-v2:free': 'Nemotron Nano',
+                'openai/gpt-oss-20b:free': 'GPT OSS 20B',
+                'z-ai/glm-4.5-air:free': 'GLM 4.5 Air',
+                'qwen/qwen3-coder:free': 'Qwen3 Coder',
+                'openrouter/sonoma-sky-alpha': 'Sonoma Sky',
+                'openrouter/sonoma-dusk-alpha': 'Sonoma Dusk'
+            };
+            return modelNames[modelId] || modelId.split('/').pop().split(':')[0];
+        }
+
         function calculateNextPost() {
             const schedule = document.getElementById('schedule').value;
             const nextElement = document.getElementById('nextPost');
             
-            // This is a simplified calculation
             const now = new Date();
             let next = new Date(now);
             
+            // Parse cron expression and calculate next execution time
             switch(schedule) {
+                // Minute-based schedules
+                case '*/5 * * * *':
+                    next.setMinutes(Math.ceil(next.getMinutes() / 5) * 5, 0, 0);
+                    break;
+                case '*/10 * * * *':
+                    next.setMinutes(Math.ceil(next.getMinutes() / 10) * 10, 0, 0);
+                    break;
+                case '*/15 * * * *':
+                    next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15, 0, 0);
+                    break;
+                case '*/20 * * * *':
+                    next.setMinutes(Math.ceil(next.getMinutes() / 20) * 20, 0, 0);
+                    break;
+                case '*/30 * * * *':
+                    next.setMinutes(Math.ceil(next.getMinutes() / 30) * 30, 0, 0);
+                    break;
+                case '0,30 * * * *':
+                    if (next.getMinutes() < 30) {
+                        next.setMinutes(30, 0, 0);
+                    } else {
+                        next.setHours(next.getHours() + 1, 0, 0, 0);
+                    }
+                    break;
+                    
+                // Hourly schedules
                 case '0 * * * *':
                     next.setHours(next.getHours() + 1, 0, 0, 0);
                     break;
                 case '0 */2 * * *':
-                    next.setHours(next.getHours() + 2, 0, 0, 0);
+                    next.setHours(Math.ceil(next.getHours() / 2) * 2, 0, 0, 0);
                     break;
                 case '0 */4 * * *':
-                    next.setHours(next.getHours() + 4, 0, 0, 0);
+                    next.setHours(Math.ceil(next.getHours() / 4) * 4, 0, 0, 0);
                     break;
+                case '0 */6 * * *':
+                    next.setHours(Math.ceil(next.getHours() / 6) * 6, 0, 0, 0);
+                    break;
+                case '0 */12 * * *':
+                    next.setHours(Math.ceil(next.getHours() / 12) * 12, 0, 0, 0);
+                    break;
+                    
+                // Daily schedules
+                case '0 0 * * *':
+                    next.setDate(next.getDate() + 1);
+                    next.setHours(0, 0, 0, 0);
+                    break;
+                case '0 9 * * *':
+                    if (next.getHours() >= 9) {
+                        next.setDate(next.getDate() + 1);
+                    }
+                    next.setHours(9, 0, 0, 0);
+                    break;
+                case '0 12 * * *':
+                    if (next.getHours() >= 12) {
+                        next.setDate(next.getDate() + 1);
+                    }
+                    next.setHours(12, 0, 0, 0);
+                    break;
+                case '0 18 * * *':
+                    if (next.getHours() >= 18) {
+                        next.setDate(next.getDate() + 1);
+                    }
+                    next.setHours(18, 0, 0, 0);
+                    break;
+                    
+                // Weekly schedules
+                case '0 0 * * 1':
+                case '0 9 * * 1':
+                    const targetDay = 1; // Monday
+                    const currentDay = next.getDay();
+                    let daysUntilMonday = (targetDay - currentDay + 7) % 7;
+                    if (daysUntilMonday === 0 && (schedule === '0 0 * * 1' ? next.getHours() >= 0 : next.getHours() >= 9)) {
+                        daysUntilMonday = 7;
+                    }
+                    next.setDate(next.getDate() + daysUntilMonday);
+                    next.setHours(schedule === '0 9 * * 1' ? 9 : 0, 0, 0, 0);
+                    break;
+                    
                 default:
+                    // Fallback to hourly
                     next.setHours(next.getHours() + 1, 0, 0, 0);
             }
             
-            nextElement.textContent = next.toLocaleString();
+            const timeUntil = next - now;
+            const hours = Math.floor(timeUntil / (1000 * 60 * 60));
+            const minutes = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let timeString = next.toLocaleString();
+            if (hours === 0 && minutes < 60) {
+                timeString += \` (in \${minutes}m)\`;
+            } else if (hours < 24) {
+                timeString += \` (in \${hours}h \${minutes}m)\`;
+            }
+            
+            nextElement.textContent = timeString;
+        }
+
+        async function editQueueItem(itemId) {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            try {
+                // Get current queue to find the item
+                const response = await fetch(\`\${API_BASE}/queue\`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) throw new Error('Failed to load queue');
+
+                const data = await response.json();
+                const item = data.queue.find(q => q.id === itemId);
+                
+                if (!item) {
+                    showNotification('Queue item not found', 'error');
+                    return;
+                }
+
+                // Show edit modal
+                document.getElementById('editItemId').value = itemId;
+                document.getElementById('editItemSubject').value = item.subject;
+                document.getElementById('editItemMarket').value = item.market;
+                document.getElementById('editItemModel').value = item.model || 'deepseek/deepseek-chat-v3.1:free';
+                document.getElementById('editModal').classList.remove('hidden');
+                
+            } catch (error) {
+                showNotification(\`Failed to load item details: \${error.message}\`, 'error');
+            }
+        }
+
+        async function updateQueueItem() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            const itemId = document.getElementById('editItemId').value;
+            const subject = document.getElementById('editItemSubject').value.trim();
+            const market = document.getElementById('editItemMarket').value;
+            const model = document.getElementById('editItemModel').value;
+
+            if (!subject) {
+                showNotification('Subject cannot be empty', 'warning');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                const response = await fetch(\`\${API_BASE}/queue/\${itemId}\`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ subject, market, model })
+                });
+
+                if (!response.ok) throw new Error('Failed to update queue item');
+
+                document.getElementById('editModal').classList.add('hidden');
+                showNotification('Queue item updated successfully!', 'success');
+                await loadQueue();
+            } catch (error) {
+                showNotification(\`Failed to update item: \${error.message}\`, 'error');
+            } finally {
+                showLoading(false);
+            }
         }
 
         async function removeSubject(id) {
@@ -2138,6 +2449,7 @@ No errors recorded yet
         document.getElementById('generateBtn').addEventListener('click', generateContent);
         document.getElementById('postBtn').addEventListener('click', postContent);
         document.getElementById('updateScheduleBtn').addEventListener('click', updateSchedule);
+        document.getElementById('schedule').addEventListener('change', calculateNextPost);
         document.getElementById('addSubjectBtn').addEventListener('click', addSubject);
         document.getElementById('refreshQueueBtn').addEventListener('click', loadQueue);
         document.getElementById('saveFooterBtn').addEventListener('click', saveFooterSettings);
@@ -2162,6 +2474,15 @@ No errors recorded yet
         });
         document.getElementById('confirmBulkAdd').addEventListener('click', bulkAddSubjects);
 
+        // Edit operations
+        document.getElementById('closeEditModal').addEventListener('click', () => {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+        document.getElementById('cancelEdit').addEventListener('click', () => {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+        document.getElementById('confirmEdit').addEventListener('click', updateQueueItem);
+
         // Schedule change updates next post time
         document.getElementById('schedule').addEventListener('change', calculateNextPost);
 
@@ -2179,10 +2500,16 @@ No errors recorded yet
             }
         });
 
-        // Close modal when clicking outside
+        // Close modals when clicking outside
         document.getElementById('bulkModal').addEventListener('click', (e) => {
             if (e.target.id === 'bulkModal') {
                 document.getElementById('bulkModal').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('editModal').addEventListener('click', (e) => {
+            if (e.target.id === 'editModal') {
+                document.getElementById('editModal').classList.add('hidden');
             }
         });
     </script>
@@ -2328,7 +2655,7 @@ Remember: This should be professional-grade content that traders can immediately
             });
           }
 
-          console.log('Manual post attempt...', {
+          console.warn('Manual post attempt...', {
             contentLength: content.length,
             hasToken: !!env.TELEGRAM_BOT_TOKEN,
             hasChatId: !!env.TELEGRAM_CHAT_ID,
@@ -2355,7 +2682,7 @@ Remember: This should be professional-grade content that traders can immediately
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
           const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl);
           
-          console.log('Manual post successful');
+          console.warn('Manual post successful');
           await updatePostingStats(env, true);
           
           return new Response(JSON.stringify({ success: true, result }), {
@@ -2399,8 +2726,8 @@ Remember: This should be professional-grade content that traders can immediately
           
           // Handle bulk add (array of subjects)
           if (body.subjects && Array.isArray(body.subjects)) {
-            const { subjects, market } = body;
-            const results = await bulkAddSubjectsToQueue(env, subjects, market || 'crypto');
+            const { subjects, market, model } = body;
+            const results = await bulkAddSubjectsToQueue(env, subjects, market || 'crypto', model || 'deepseek/deepseek-chat-v3.1:free');
             return new Response(JSON.stringify({ 
               success: true, 
               added: results.added,
@@ -2412,7 +2739,7 @@ Remember: This should be professional-grade content that traders can immediately
           }
           
           // Handle single subject add
-          const { subject, market } = body;
+          const { subject, market, model } = body;
           if (!subject) {
             return new Response(JSON.stringify({ error: 'Subject is required' }), {
               status: 400,
@@ -2420,8 +2747,32 @@ Remember: This should be professional-grade content that traders can immediately
             });
           }
           
-          const newItem = await addSubjectToQueue(env, subject, market || 'crypto');
+          const newItem = await addSubjectToQueue(env, subject, market || 'crypto', model || 'deepseek/deepseek-chat-v3.1:free');
           return new Response(JSON.stringify({ success: true, item: newItem }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      if (path.startsWith('/api/queue/') && request.method === 'PUT') {
+        try {
+          const subjectId = path.split('/').pop();
+          const { subject, market, model } = await request.json();
+          
+          if (!subject) {
+            return new Response(JSON.stringify({ error: 'Subject is required' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
+          await updateQueueItem(env, subjectId, subject, market, model);
+          return new Response(JSON.stringify({ success: true }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
@@ -2543,17 +2894,17 @@ Remember: This should be professional-grade content that traders can immediately
       // Test post endpoint
       if (path === '/api/test-post' && request.method === 'POST') {
         try {
-          console.log('=== TEST POST STARTED ===');
-          console.log('Timestamp:', new Date().toISOString());
+          console.warn('=== TEST POST STARTED ===');
+          console.warn('Timestamp:', new Date().toISOString());
           
           // Environment check
-          console.log('Environment check:');
-          console.log('- TELEGRAM_BOT_TOKEN exists:', !!env.TELEGRAM_BOT_TOKEN);
-          console.log('- TELEGRAM_BOT_TOKEN length:', env.TELEGRAM_BOT_TOKEN?.length || 0);
-          console.log('- TELEGRAM_BOT_TOKEN format check:', env.TELEGRAM_BOT_TOKEN?.includes(':') ? 'PASS' : 'FAIL');
-          console.log('- TELEGRAM_CHAT_ID exists:', !!env.TELEGRAM_CHAT_ID);
-          console.log('- TELEGRAM_CHAT_ID value:', env.TELEGRAM_CHAT_ID);
-          console.log('- OPENROUTER_API_KEY exists:', !!env.OPENROUTER_API_KEY);
+          console.warn('Environment check:');
+          console.warn('- TELEGRAM_BOT_TOKEN exists:', !!env.TELEGRAM_BOT_TOKEN);
+          console.warn('- TELEGRAM_BOT_TOKEN length:', env.TELEGRAM_BOT_TOKEN?.length || 0);
+          console.warn('- TELEGRAM_BOT_TOKEN format check:', env.TELEGRAM_BOT_TOKEN?.includes(':') ? 'PASS' : 'FAIL');
+          console.warn('- TELEGRAM_CHAT_ID exists:', !!env.TELEGRAM_CHAT_ID);
+          console.warn('- TELEGRAM_CHAT_ID value:', env.TELEGRAM_CHAT_ID);
+          console.warn('- OPENROUTER_API_KEY exists:', !!env.OPENROUTER_API_KEY);
           
           if (!env.TELEGRAM_BOT_TOKEN) {
             const error = 'TELEGRAM_BOT_TOKEN environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_BOT_TOKEN';
@@ -2573,9 +2924,9 @@ Remember: This should be professional-grade content that traders can immediately
             throw new Error(error);
           }
           
-          console.log('Environment validation passed, proceeding with test post...');
+          console.warn('Environment validation passed, proceeding with test post...');
           const result = await buildAndSend(env);
-          console.log('=== TEST POST COMPLETED SUCCESSFULLY ===');
+          console.warn('=== TEST POST COMPLETED SUCCESSFULLY ===');
           
           return new Response(JSON.stringify({ 
             success: true, 
@@ -2597,6 +2948,67 @@ Remember: This should be professional-grade content that traders can immediately
             timestamp: new Date().toISOString()
           }), {
             status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Schedule management endpoints
+      if (path === '/api/schedule' && request.method === 'GET') {
+        try {
+          // Get current schedule from KV storage or default
+          const schedule = await env.SUBJECTS_QUEUE.get('schedule') || '0 * * * *';
+          return new Response(JSON.stringify({ schedule }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ 
+            error: 'Failed to get schedule',
+            details: error.message 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      if (path === '/api/schedule' && request.method === 'POST') {
+        try {
+          const { schedule } = await request.json();
+          
+          // Validate cron expression format
+          if (!schedule || typeof schedule !== 'string') {
+            throw new Error('Invalid schedule format');
+          }
+          
+          // Basic cron validation (5 or 6 parts for seconds support)
+          const cronParts = schedule.trim().split(/\s+/);
+          if (cronParts.length !== 5 && cronParts.length !== 6) {
+            throw new Error('Invalid cron expression. Expected 5 or 6 parts (minute hour day month weekday [year])');
+          }
+          
+          // Store the schedule in KV
+          await env.SUBJECTS_QUEUE.put('schedule', schedule);
+          
+          console.warn('Schedule updated to:', schedule);
+          
+          // Note: In a real deployment, you would also need to update the wrangler.toml
+          // and redeploy the worker. For now, we'll just store it for future use.
+          
+          return new Response(JSON.stringify({ 
+            success: true,
+            schedule,
+            message: 'Schedule updated successfully. Note: To fully apply the new schedule, update wrangler.toml and redeploy.',
+            warning: 'Current cron triggers in wrangler.toml need manual update for the schedule to take effect.'
+          }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ 
+            error: 'Failed to update schedule',
+            details: error.message 
+          }), {
+            status: 400,
             headers: { 'Content-Type': 'application/json' }
           });
         }

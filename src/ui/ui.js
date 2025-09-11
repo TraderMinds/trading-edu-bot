@@ -224,3 +224,5 @@ const htmlContent = `<!DOCTYPE html>
     </script>
 </body>
 </html>`;
+
+export default htmlContent;
