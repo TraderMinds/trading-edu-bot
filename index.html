@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Education Bot - Professional AI-Powered Trading Education Platform</title>
+    <meta name="description" content="Revolutionary AI-powered trading education bot with automated Telegram delivery, advanced scheduling, and professional admin interface. Transform your trading community today.">
+    <meta name="keywords" content="trading bot, education bot, telegram bot, AI trading, crypto trading, automated education">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Trading Education Bot - Professional AI-Powered Platform">
+    <meta property="og:description" content="Revolutionary trading education automation platform with AI content generation and Telegram integration.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://traderminds.github.io/trading-edu-bot/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    
+    <!-- Self-contained styling -->
+    
+    <style>
+        /* Reset and base styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+        
+        /* Color system */
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --gold: #fbbf24;
+            --success: #10b981;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        /* Layout utilities */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .fixed { position: fixed; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .min-h-screen { min-height: 100vh; }
+        .max-w-7xl { max-width: 80rem; margin: 0 auto; }
+        .max-w-4xl { max-width: 56rem; margin: 0 auto; }
+        .max-w-3xl { max-width: 48rem; margin: 0 auto; }
+        .max-w-2xl { max-width: 42rem; margin: 0 auto; }
+        .max-w-lg { max-width: 32rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .px-12 { padding-left: 3rem; padding-right: 3rem; }
+        .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+        .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-12 { margin-bottom: 3rem; }
+        .mb-16 { margin-bottom: 4rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .mr-4 { margin-right: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .mt-12 { margin-top: 3rem; }
+        
+        /* Flexbox */
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .flex-col { flex-direction: column; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .space-x-3 > * + * { margin-left: 0.75rem; }
+        .space-x-4 > * + * { margin-left: 1rem; }
+        .space-x-6 > * + * { margin-left: 1.5rem; }
+        .space-x-8 > * + * { margin-left: 2rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-8 > * + * { margin-top: 2rem; }
+        
+        /* Grid */
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .gap-8 { gap: 2rem; }
+        .gap-12 { gap: 3rem; }
+        
+        /* Typography */
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .text-5xl { font-size: 3rem; }
+        .text-6xl { font-size: 3.75rem; }
+        .text-7xl { font-size: 4.5rem; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .font-extrabold { font-weight: 800; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .leading-relaxed { line-height: 1.625; }
+        
+        /* Colors */
+        .text-white { color: #ffffff; }
+        .text-gray-300 { color: #d1d5db; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-500 { color: #6b7280; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-gray-800 { background-color: var(--gray-800); }
+        .bg-gray-900 { background-color: var(--gray-900); }
+        .bg-white { background-color: #ffffff; }
+        .bg-black { background-color: #000000; }
+        .text-accent { color: var(--accent); }
+        .text-success { color: var(--success); }
+        .text-gold { color: var(--gold); }
+        .text-purple-400 { color: #c084fc; }
+        .text-yellow-400 { color: #facc15; }
+        .text-red-400 { color: #f87171; }
+        .text-indigo-400 { color: #818cf8; }
+        .bg-accent { background-color: var(--accent); }
+        .bg-success { background-color: var(--success); }
+        .bg-gradient-accent { background: linear-gradient(to right, var(--accent), #2563eb); }
+        .bg-gradient-success { background: linear-gradient(to right, var(--success), #059669); }
+        .border-accent { border-color: var(--accent); }
+        .border-success { border-color: var(--success); }
+        .border-purple-500 { border-color: #a855f7; }
+        .border-gold { border-color: var(--gold); }
+        .border-red-500 { border-color: #ef4444; }
+        .border-indigo-500 { border-color: #6366f1; }
+        .border-gray-600 { border-color: #4b5563; }
+        .border-gray-700 { border-color: #374151; }
+        
+        /* Borders and rounds */
+        .border { border: 1px solid; }
+        .border-2 { border: 2px solid; }
+        .border-l-4 { border-left: 4px solid; }
+        .border-t { border-top: 1px solid; }
+        .rounded { border-radius: 0.375rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-3xl { border-radius: 1.5rem; }
+        .rounded-full { border-radius: 9999px; }
+        .rounded-bl-3xl { border-bottom-left-radius: 1.5rem; }
+        
+        /* Size utilities */
+        .w-8 { width: 2rem; }
+        .w-10 { width: 2.5rem; }
+        .w-12 { width: 3rem; }
+        .w-16 { width: 4rem; }
+        .h-8 { height: 2rem; }
+        .h-10 { height: 2.5rem; }
+        .h-12 { height: 3rem; }
+        .h-16 { height: 4rem; }
+        
+        /* Positioning */
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .top-0 { top: 0; }
+        .right-0 { right: 0; }
+        .top-20 { top: 5rem; }
+        .left-20 { left: 5rem; }
+        .right-20 { right: 5rem; }
+        .bottom-20 { bottom: 5rem; }
+        .left-1\/2 { left: 50%; }
+        .z-10 { z-index: 10; }
+        .z-40 { z-index: 40; }
+        .z-50 { z-index: 50; }
+        
+        /* Buttons */
+        button, .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        button:hover, .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        /* Form elements */
+        input, select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #374151;
+            border-radius: 0.375rem;
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* List styles */
+        ul { list-style: none; }
+        
+        /* Overflow */
+        .overflow-hidden { overflow: hidden; }
+        .overflow-x-hidden { overflow-x: hidden; }
+        
+        /* Effects */
+        .opacity-20 { opacity: 0.2; }
+        .opacity-50 { opacity: 0.5; }
+        .opacity-75 { opacity: 0.75; }
+        .mix-blend-multiply { mix-blend-mode: multiply; }
+        .filter { filter: blur(0); }
+        .blur-xl { filter: blur(24px); }
+        
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 20px var(--accent); }
+            to { box-shadow: 0 0 30px var(--accent), 0 0 40px var(--accent); }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-glow { animation: glow 2s ease-in-out infinite alternate; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out; }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+        
+        .gradient-bg {
+            background: linear-gradient(-45deg, var(--primary), var(--secondary), var(--primary), #374151);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Responsive */
+        @media (min-width: 768px) {
+            .md\\:hidden { display: none; }
+            .md\\:flex { display: flex; }
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .md\\:text-5xl { font-size: 3rem; }
+            .md\\:text-7xl { font-size: 4.5rem; }
+            .md\\:text-2xl { font-size: 1.5rem; }
+        }
+        
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lg\\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+        }
+        
+        @media (max-width: 640px) {
+            .sm\\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+            .sm\\:flex-row { flex-direction: row; }
+        }
+        
+        /* Icon replacements */
+        .icon-robot::before { content: "🤖"; }
+        .icon-brain::before { content: "🧠"; }
+        .icon-telegram::before { content: "📱"; }
+        .icon-clock::before { content: "⏰"; }
+        .icon-dashboard::before { content: "📊"; }
+        .icon-cloud::before { content: "☁️"; }
+        .icon-shield::before { content: "🛡️"; }
+        .icon-javascript::before { content: "⚡"; }
+        .icon-check::before { content: "✓"; color: var(--success); }
+        .icon-rocket::before { content: "🚀"; }
+        .icon-info::before { content: "ℹ️"; }
+        .icon-coins::before { content: "💰"; }
+        .icon-card::before { content: "💳"; }
+        .icon-copy::before { content: "📋"; }
+        .icon-envelope::before { content: "✉️"; }
+        .icon-github::before { content: "🔗"; }
+        .icon-discord::before { content: "💬"; }
+        .icon-chart::before { content: "📈"; }
+        .icon-users::before { content: "👥"; }
+        .icon-exchange::before { content: "🔄"; }
+        .icon-mobile::before { content: "📱"; }
+        .icon-menu::before { content: "☰"; }
+        
+        .transition-colors { transition: color 0.3s ease; }
+        .transition-all { transition: all 0.3s ease; }
+        .duration-300 { transition-duration: 300ms; }
+        
+        /* Hover states */
+        .hover\\:text-accent:hover { color: var(--accent); }
+        .hover\\:bg-accent:hover { background-color: var(--accent); }
+        .hover\\:text-white:hover { color: white; }
+        .hover\\:bg-blue-600:hover { background-color: #2563eb; }
+        .hover\\:bg-green-600:hover { background-color: #059669; }
+        .hover\\:bg-purple-600:hover { background-color: #9333ea; }
+        .hover\\:bg-gray-800:hover { background-color: var(--gray-800); }
+        .hover\\:bg-blue-400:hover { background-color: #60a5fa; }
+        
+        /* Custom gradients for different sections */
+        .bg-gradient-1 { background: linear-gradient(135deg, var(--accent), #2563eb); }
+        .bg-gradient-2 { background: linear-gradient(135deg, var(--success), #059669); }
+        .bg-gradient-3 { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        .bg-gradient-4 { background: linear-gradient(135deg, var(--gold), #d97706); }
+        .bg-gradient-5 { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .bg-gradient-6 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-900 text-white overflow-x-hidden">
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-effect">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-1 rounded-lg flex items-center justify-center">
+                        <span class="icon-robot text-white text-lg"></span>
+                    </div>
+                    <span class="text-xl font-bold">TradingEduBot</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#features" class="hover:text-accent transition-colors">Features</a>
+                    <a href="#pricing" class="hover:text-accent transition-colors">Pricing</a>
+                    <a href="#roadmap" class="hover:text-accent transition-colors">Roadmap</a>
+                    <a href="#contact" class="hover:text-accent transition-colors">Contact</a>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden">
+                    <span class="icon-menu text-xl"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="fixed inset-0 z-40 glass-effect hidden md:hidden">
+        <div class="flex flex-col items-center justify-center h-full space-y-8 text-xl">
+            <a href="#features" class="hover:text-accent transition-colors">Features</a>
+            <a href="#pricing" class="hover:text-accent transition-colors">Pricing</a>
+            <a href="#roadmap" class="hover:text-accent transition-colors">Roadmap</a>
+            <a href="#contact" class="hover:text-accent transition-colors">Contact</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen gradient-bg flex items-center justify-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        
+        <!-- Animated Background Elements -->
+        <div class="absolute top-20 left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
+        <div class="absolute top-40 right-20 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
+        <div class="absolute bottom-20 left-1/2 w-64 h-64 bg-green-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float" style="animation-delay: 4s;"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div class="animate-slide-up">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-white via-blue-200 to-accent bg-clip-text text-transparent">
+                    Revolutionary Trading Education Bot
+                </h1>
+                <p class="text-xl md:text-2xl mb-8 text-gray-300 max-w-4xl mx-auto leading-relaxed">
+                    Transform your trading community with AI-powered educational content delivery. 
+                    Automated, intelligent, and professional-grade platform for serious traders.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                    <button onclick="scrollToSection('pricing')" 
+                            class="bg-gradient-1 text-white px-12 py-4 rounded-full text-lg font-semibold hover-lift animate-glow transition-all duration-300">
+                        <span class="icon-rocket mr-2"></span>
+                        Get Started - $500 USD
+                    </button>
+                    <button onclick="scrollToSection('features')" 
+                            class="border-2 border-accent text-accent px-12 py-4 rounded-full text-lg font-semibold hover:bg-accent hover:text-white transition-all duration-300">
+                        <span class="icon-info mr-2"></span>
+                        Learn More
+                    </button>
+                </div>
+                
+                <div class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div class="animate-fade-in" style="animation-delay: 0.2s;">
+                        <div class="text-3xl font-bold text-accent">AI-Powered</div>
+                        <div class="text-sm text-gray-400">Content Generation</div>
+                    </div>
+                    <div class="animate-fade-in" style="animation-delay: 0.4s;">
+                        <div class="text-3xl font-bold text-success">24/7</div>
+                        <div class="text-sm text-gray-400">Automated Delivery</div>
+                    </div>
+                    <div class="animate-fade-in" style="animation-delay: 0.6s;">
+                        <div class="text-3xl font-bold text-gold">Cloud-Based</div>
+                        <div class="text-sm text-gray-400">Cloudflare Workers</div>
+                    </div>
+                    <div class="animate-fade-in" style="animation-delay: 0.8s;">
+                        <div class="text-3xl font-bold text-purple-400">Enterprise</div>
+                        <div class="text-sm text-gray-400">Grade Security</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Powerful Features</h2>
+                <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                    Everything you need to run a professional trading education platform
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-1 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-brain text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">AI Content Generation</h3>
+                    <p class="text-gray-400 mb-4">
+                        Advanced AI models including GPT-4, Claude, and Llama generate high-quality, educational trading content automatically.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Multiple AI model support</li>
+                        <li>• Custom prompt engineering</li>
+                        <li>• Content quality validation</li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-2 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-telegram text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Telegram Integration</h3>
+                    <p class="text-gray-400 mb-4">
+                        Seamless Telegram bot integration with automated posting, scheduling, and community management features.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Automated message delivery</li>
+                        <li>• Channel and group support</li>
+                        <li>• Rich media formatting</li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-3 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-clock text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Advanced Scheduling</h3>
+                    <p class="text-gray-400 mb-4">
+                        Flexible cron-based scheduling system with minute-level precision and timezone support.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Minute-level precision</li>
+                        <li>• Multiple schedule patterns</li>
+                        <li>• Timezone awareness</li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-4 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-dashboard text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Admin Dashboard</h3>
+                    <p class="text-gray-400 mb-4">
+                        Professional web interface for content management, analytics, and system monitoring.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Real-time analytics</li>
+                        <li>• Content queue management</li>
+                        <li>• System health monitoring</li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-5 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-cloud text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Cloud Infrastructure</h3>
+                    <p class="text-gray-400 mb-4">
+                        Built on Cloudflare Workers for global distribution, high availability, and enterprise-grade performance.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Global edge deployment</li>
+                        <li>• 99.9% uptime guarantee</li>
+                        <li>• Auto-scaling capabilities</li>
+                    </ul>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift">
+                    <div class="w-16 h-16 bg-gradient-6 rounded-xl flex items-center justify-center mb-6">
+                        <span class="icon-shield text-2xl text-white"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Enterprise Security</h3>
+                    <p class="text-gray-400 mb-4">
+                        Advanced security features including token-based authentication, encrypted storage, and audit logging.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Multi-layer authentication</li>
+                        <li>• Encrypted data storage</li>
+                        <li>• Comprehensive audit trails</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Specifications -->
+    <section class="py-20 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Technical Excellence</h2>
+                <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                    Built with modern technologies and best practices for maximum performance and reliability
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h3 class="text-3xl font-bold mb-8">Architecture & Technologies</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
+                                <span class="icon-javascript text-xl text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold">Modern JavaScript (ES2022+)</h4>
+                                <p class="text-gray-400">Latest JavaScript features and async/await patterns</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+                                <span class="icon-cloud text-xl text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold">Cloudflare Workers</h4>
+                                <p class="text-gray-400">Edge computing platform with global distribution</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                                <span class="icon-cloud text-xl text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold">Cloudflare KV Storage</h4>
+                                <p class="text-gray-400">Distributed key-value storage for application state</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                                <span class="icon-github text-xl text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold">CI/CD Pipeline</h4>
+                                <p class="text-gray-400">Automated testing and deployment with GitHub Actions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-2xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Performance Metrics</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Response Time</span>
+                            <span class="text-success font-semibold">&lt; 100ms</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Uptime</span>
+                            <span class="text-success font-semibold">99.9%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Global Edge Locations</span>
+                            <span class="text-accent font-semibold">200+</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Test Coverage</span>
+                            <span class="text-success font-semibold">100%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Security Score</span>
+                            <span class="text-gold font-semibold">A+</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Professional Pricing</h2>
+                <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                    Complete trading education bot solution with full source code and deployment support
+                </p>
+            </div>
+            
+            <div class="max-w-2xl mx-auto">
+                <div class="glass-effect rounded-3xl p-12 hover-lift relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-gradient-to-bl from-accent to-blue-600 text-white px-6 py-2 rounded-bl-3xl">
+                        <span class="font-semibold">PROFESSIONAL</span>
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <h3 class="text-3xl font-bold mb-4">Complete Trading Education Bot</h3>
+                        <div class="text-6xl font-bold text-accent mb-2">$500</div>
+                        <div class="text-gray-400">One-time payment • Full ownership</div>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Complete source code with full rights</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>AI-powered content generation system</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Professional admin dashboard</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Cloudflare Workers deployment setup</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Telegram bot integration</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Advanced scheduling system</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>Complete documentation & setup guide</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="icon-check text-success"></span>
+                            <span>30 days installation support</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <button onclick="initiateUSDTPayment()" 
+                                class="w-full bg-gradient-1 text-white py-4 rounded-xl text-lg font-semibold hover-lift animate-glow transition-all duration-300">
+                            <span class="icon-coins mr-2"></span>
+                            Pay with USDT (Recommended)
+                        </button>
+                        
+                        <button onclick="showAlternativePayment()" 
+                                class="w-full border-2 border-accent text-accent py-4 rounded-xl text-lg font-semibold hover:bg-accent hover:text-white transition-all duration-300">
+                            <span class="icon-card mr-2"></span>
+                            Alternative Payment Methods
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-6 text-sm text-gray-500">
+                        <span class="icon-shield mr-1"></span>
+                        Secure payment • Instant delivery • Money-back guarantee
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Future Roadmap -->
+    <section id="roadmap" class="py-20 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Future Roadmap</h2>
+                <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                    Upcoming features and enhancements to expand your trading education platform
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Roadmap Item 1 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-accent">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-1 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-chart text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Advanced Analytics</h3>
+                            <span class="text-sm text-accent">Q1 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Comprehensive analytics dashboard with engagement metrics, user behavior tracking, and content performance insights.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Real-time engagement tracking</li>
+                        <li>• Content performance metrics</li>
+                        <li>• User retention analysis</li>
+                    </ul>
+                </div>
+                
+                <!-- Roadmap Item 2 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-success">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-2 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-discord text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Multi-Platform Support</h3>
+                            <span class="text-sm text-success">Q1 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Expand beyond Telegram with Discord, Slack, and WhatsApp integrations for broader community reach.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Discord bot integration</li>
+                        <li>• Slack workspace support</li>
+                        <li>• WhatsApp Business API</li>
+                    </ul>
+                </div>
+                
+                <!-- Roadmap Item 3 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-purple-500">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-3 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-users text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Community Features</h3>
+                            <span class="text-sm text-purple-400">Q2 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Interactive community features including polls, quizzes, and user-generated content management.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Interactive polls & surveys</li>
+                        <li>• Knowledge assessments</li>
+                        <li>• User content moderation</li>
+                    </ul>
+                </div>
+                
+                <!-- Roadmap Item 4 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-gold">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-4 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-robot text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">AI Personalization</h3>
+                            <span class="text-sm text-yellow-400">Q2 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        AI-driven content personalization based on user preferences, experience level, and engagement patterns.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Personalized content delivery</li>
+                        <li>• Adaptive learning paths</li>
+                        <li>• Smart recommendation engine</li>
+                    </ul>
+                </div>
+                
+                <!-- Roadmap Item 5 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-red-500">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-5 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-exchange text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Trading Integration</h3>
+                            <span class="text-sm text-red-400">Q3 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Direct integration with popular trading platforms for real-time market data and educational context.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Real-time market data</li>
+                        <li>• Trading platform APIs</li>
+                        <li>• Live market examples</li>
+                    </ul>
+                </div>
+                
+                <!-- Roadmap Item 6 -->
+                <div class="glass-effect rounded-2xl p-8 hover-lift border-l-4 border-indigo-500">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-gradient-6 rounded-lg flex items-center justify-center mr-4">
+                            <span class="icon-mobile text-white"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Mobile App</h3>
+                            <span class="text-sm text-indigo-400">Q4 2024</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Native mobile applications for iOS and Android with push notifications and offline content access.
+                    </p>
+                    <ul class="text-sm text-gray-500">
+                        <li>• Native iOS & Android apps</li>
+                        <li>• Push notification system</li>
+                        <li>• Offline content library</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Get Started Today</h2>
+                <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                    Ready to transform your trading education platform? Contact us for support and consultation.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="text-2xl font-bold mb-8">Why Choose Our Trading Education Bot?</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="icon-check text-sm text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Production-Ready Code</h4>
+                                <p class="text-gray-400">Fully tested, documented, and enterprise-grade codebase ready for immediate deployment.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="icon-check text-sm text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Scalable Architecture</h4>
+                                <p class="text-gray-400">Built on Cloudflare Workers for global scale, handling thousands of users effortlessly.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <span class="icon-check text-sm text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-2">Ongoing Support</h4>
+                                <p class="text-gray-400">30 days of installation support and access to documentation and community.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-effect rounded-2xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Contact Information</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-1 rounded-lg flex items-center justify-center">
+                                <span class="icon-telegram text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Telegram</h4>
+                                <p class="text-gray-400">@TradingEduBot_Support</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-3 rounded-lg flex items-center justify-center">
+                                <span class="icon-discord text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Discord</h4>
+                                <p class="text-gray-400">TradingEdu#1234</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-lg flex items-center justify-center">
+                                <span class="icon-github text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">GitHub</h4>
+                                <p class="text-gray-400">github.com/TraderMinds</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
+                                <span class="icon-envelope text-white"></span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Email</h4>
+                                <p class="text-gray-400">support@tradingedubot.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 p-4 bg-gradient-to-r from-accent/20 to-blue-600/20 rounded-lg border border-accent/30">
+                        <p class="text-sm text-gray-300">
+                            <span class="icon-info mr-2 text-accent"></span>
+                            Response time: Within 24 hours • Available 7 days a week
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12 border-t border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-1 rounded-lg flex items-center justify-center">
+                        <span class="icon-robot text-white text-lg"></span>
+                    </div>
+                    <span class="text-xl font-bold">TradingEduBot</span>
+                </div>
+                <p class="text-gray-400 mb-6">
+                    Professional Trading Education Bot - Transforming trading communities worldwide
+                </p>
+                <div class="flex justify-center space-x-6 mb-6">
+                    <a href="#" class="text-gray-400 hover:text-accent transition-colors">
+                        <span class="icon-github text-xl"></span>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-accent transition-colors">
+                        <span class="icon-telegram text-xl"></span>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-accent transition-colors">
+                        <span class="icon-discord text-xl"></span>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-accent transition-colors">
+                        <span class="fab fa-twitter text-xl"></span>
+                    </a>
+                </div>
+                <div class="text-sm text-gray-500">
+                    © 2024 TradingEduBot. All rights reserved. | Built with ❤️ for trading communities
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl p-8 max-w-lg w-full">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-6">USDT Payment</h3>
+                <div class="bg-white p-6 rounded-xl mb-6">
+                    <img id="qr-code" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2ZmZiIvPgo8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UVIgQ29kZTwvdGV4dD4KPHN2Zz4=" alt="USDT Payment QR Code" class="mx-auto">
+                </div>
+                
+                <div class="text-left mb-6">
+                    <h4 class="font-semibold mb-2">Payment Details:</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Network:</span>
+                            <span>TRC20 (Tron)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Amount:</span>
+                            <span class="font-semibold">500 USDT</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Address:</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-mono text-xs">TBcd...Xyz9</span>
+                                <button onclick="copyToClipboard('TBcd...Xyz9')" class="text-accent hover:text-blue-400">
+                                    <span class="icon-copy"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <button onclick="confirmPayment()" 
+                            class="w-full bg-gradient-2 text-white py-3 rounded-xl font-semibold hover-lift">
+                        I've Sent the Payment
+                    </button>
+                    <button onclick="closePaymentModal()" 
+                            class="w-full border border-gray-600 text-gray-400 py-3 rounded-xl hover:bg-gray-800">
+                        Cancel
+                    </button>
+                </div>
+                
+                <div class="text-xs text-gray-500 mt-4">
+                    After payment confirmation, you'll receive the download link within 1 hour
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Smooth scrolling
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({
+                behavior: 'smooth'
+            });
+            // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        // Payment functions
+        function initiateUSDTPayment() {
+            document.getElementById('payment-modal').classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success message
+                const button = event.target;
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<span class="icon-check"></span>';
+                button.style.color = '#10b981';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.color = '';
+                }, 2000);
+            });
+        }
+
+        function confirmPayment() {
+            alert('Thank you! Please send your transaction hash to our support team. You will receive the download link within 1 hour after verification.');
+            closePaymentModal();
+        }
+
+        function showAlternativePayment() {
+            alert('For alternative payment methods (Bitcoin, Ethereum, PayPal, Wire Transfer), please contact our support team at support@tradingedubot.com');
+        }
+
+        // Scroll animations
+        function handleScrollAnimations() {
+            const elements = document.querySelectorAll('.hover-lift');
+            const windowHeight = window.innerHeight;
+
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+
+                if (elementTop < windowHeight - elementVisible) {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }
+            });
+        }
+
+        // Initialize scroll animations
+        window.addEventListener('scroll', handleScrollAnimations);
+        handleScrollAnimations(); // Run on load
+
+        // Add to all nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+                // Close mobile menu
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
