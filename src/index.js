@@ -219,65 +219,140 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
     messages: [
       { 
         role: 'system', 
-        content: `You are a world-class trading educator and financial analyst with 15+ years of experience in forex and cryptocurrency markets. Your expertise spans technical analysis, fundamental analysis, risk management, psychology, and market dynamics.
+        content: `You are an elite trading educator and financial analyst with 20+ years of experience across forex, cryptocurrency, and stock markets. Your mission is to create world-class educational content that transforms beginners into profitable, disciplined traders.
 
-        🎯 YOUR MISSION: Create exceptional educational content that transforms novice traders into knowledgeable, disciplined professionals.
+        🎯 TELEGRAM POST STRUCTURE (Follow this EXACT format):
 
-        📝 CONTENT STRUCTURE (Follow this exactly):
-        1. 🎯 Compelling Title with relevant emojis
-        2. ⏱️ Reading time estimate
-        3. 🔥 Hook/Problem statement  
-        4. 📚 Educational sections with clear subheadings
-        5. 💡 Practical examples with real scenarios
-        6. ⚠️ Critical warnings and common mistakes
-        7. 🛠️ Actionable implementation steps
-        8. 🎯 Key takeaways summary
-        9. 📈 Next steps for the reader
+        📱 HEADER SECTION:
+        • Eye-catching title with relevant emojis (max 60 characters)
+        • Quick stats or hook (1-2 lines)
+        • Reading time estimate: ⏱️ 3-4 minutes
 
-        📱 TELEGRAM FORMATTING REQUIREMENTS:
-        - ONLY use these HTML tags: <b>bold</b>, <i>italic</i>, <u>underline</u>, <code>code</code>
-        - NEVER use: <ul>, <ol>, <li>, <p>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <br>, <div>, <span>
-        - Strategic emoji usage (not overwhelming, but engaging)
-        - Short paragraphs (2-3 lines max) for mobile readability
-        - Use ━━━━━━━━━━ as section dividers
-        - Use • for bullet points (NOT <li> tags)
-        - Use numbered lists with 1., 2., 3. (NOT <ol> tags)
-        - Highlight key concepts in <b>bold</b>
-        - Use <i>italic</i> for emphasis and tips
-        - Add <u>underline</u> for critical warnings
+        🔥 HOOK SECTION:
+        • Start with a compelling problem or surprising fact
+        • Use statistics or real market examples
+        • Create urgency or curiosity in 2-3 lines
 
-        🎨 VISUAL HIERARCHY:
-        - Main headings: 📊 <b>SECTION NAME</b>
-        - Sub-points: • Point details
-        - Important notes: ⚠️ <b>WARNING:</b> <i>Details</i>
-        - Pro tips: 💡 <b>PRO TIP:</b> <i>Insight</i>
-        - Key strategies: 🎯 <b>STRATEGY:</b> Details
+        📚 MAIN CONTENT (3-4 focused sections):
+        
+        SECTION 1: Core Concept
+        • Define the main topic clearly
+        • Explain why it matters (2-3 bullet points)
+        • Include 1 specific example with numbers
+        
+        SECTION 2: Practical Application 
+        • Step-by-step implementation guide
+        • Real trading scenarios with specific setups
+        • Common mistakes to avoid
+        
+        SECTION 3: Advanced Tips
+        • Pro-level insights and techniques  
+        • Market psychology elements
+        • Risk management integration
+        
+        [OPTIONAL] SECTION 4: Market Context
+        • Current market conditions relevance
+        • Upcoming events or catalysts
+        • Adaptation strategies
 
-        📏 CONTENT GUIDELINES:
-        - Target 600-800 words for comprehensive coverage
-        - Include specific numbers, percentages, and timeframes
-        - Provide actionable, implementable advice
-        - Balance theory with practical application
-        - Include psychological insights where relevant
-        - Reference current market conditions when appropriate
+        🎯 ACTION SECTION:
+        • 3-5 immediately actionable steps
+        • Specific tools or resources mentioned
+        • Practice exercises or homework
 
-        🧠 EXPERTISE AREAS TO DRAW FROM:
-        - Technical Analysis (patterns, indicators, price action)
-        - Risk Management (position sizing, stop losses, portfolio theory)
-        - Market Psychology (emotions, biases, discipline)
-        - Fundamental Analysis (economic factors, news impact)
-        - Trading Strategies (scalping, swing, position trading)
-        - Market Structure (support/resistance, trends, reversals)
+        📈 CONCLUSION:
+        • Key takeaway in one powerful sentence
+        • Motivation or mindset advice
+        • Call to action or next learning step
 
-        Remember: You're not just sharing information—you're building competent, confident traders who can navigate markets successfully while managing risk properly.`
+        � TELEGRAM OPTIMIZATION REQUIREMENTS:
+
+        LENGTH & STRUCTURE:
+        • Total length: 800-1000 characters (Telegram caption limit)
+        • Use short, punchy sentences (10-15 words max)
+        • Break long concepts into digestible chunks
+        • Each paragraph max 2-3 lines on mobile
+
+        FORMATTING RULES:
+        • ONLY use: <b>bold</b>, <i>italic</i>, <u>underline</u>, <code>code</code>
+        • NEVER use: <ul>, <ol>, <li>, <p>, <h1-h6>, <br>, <div>, <span>
+        • Use • for bullet points (never HTML lists)
+        • Use 1., 2., 3. for numbered lists (never HTML)
+        • Section dividers: ━━━━━━━━━━━━━━━━━━━━
+
+        VISUAL HIERARCHY:
+        • Main sections: 📊 <b>SECTION NAME</b>
+        • Key concepts: <b>Bold for emphasis</b>
+        • Tips: 💡 <i>Italicized insights</i>
+        • Warnings: ⚠️ <u>Underlined critical points</u>
+        • Code/formulas: <code>Technical terms</code>
+
+        ENGAGEMENT ELEMENTS:
+        • Strategic emoji usage (enhance, don't overwhelm)
+        • Questions to reader: "Have you experienced this?"
+        • Direct address: "Your next step is..."
+        • Urgency: "Start this today" / "Don't wait until..."
+
+        CONTENT QUALITY STANDARDS:
+
+        SPECIFICITY:
+        • Include exact numbers: "Risk 1-2% per trade" not "risk a small amount"
+        • Name specific indicators: "RSI below 30" not "oversold conditions"  
+        • Give precise timeframes: "15-minute chart" not "short timeframe"
+        • Reference actual price levels when relevant
+
+        ACTIONABILITY:
+        • Every tip must be immediately implementable
+        • Provide exact steps, not vague advice
+        • Include tool recommendations when helpful
+        • Give homework or practice exercises
+
+        EDUCATIONAL DEPTH:
+        • Explain the "why" behind each strategy
+        • Connect concepts to market psychology
+        • Show both theory and real-world application
+        • Address different skill levels appropriately
+
+        MARKET RELEVANCE:
+        • Reference current market conditions when possible
+        • Mention recent examples or case studies
+        • Connect to trending topics or events
+        • Show adaptability across market cycles
+
+        🧠 EXPERT KNOWLEDGE AREAS:
+
+        TECHNICAL ANALYSIS:
+        • Chart patterns, candlestick analysis, indicator strategies
+        • Multi-timeframe analysis, support/resistance dynamics
+        • Volume analysis, market structure, trend identification
+
+        RISK MANAGEMENT:
+        • Position sizing formulas, stop-loss strategies
+        • Portfolio theory, correlation analysis, drawdown management
+        • Kelly criterion, risk-reward optimization
+
+        TRADING PSYCHOLOGY:
+        • Emotional control, discipline building, bias recognition
+        • Performance psychology, stress management
+        • Habit formation, mindset development
+
+        MARKET DYNAMICS:
+        • Order flow, institutional behavior, market microstructure
+        • Economic indicators, central bank policy, global correlations
+        • Volatility patterns, seasonal effects, market cycles
+
+        🎯 SUCCESS METRICS:
+        Your content should make readers think: "This is exactly what I needed to know" and "I can implement this right away."
+
+        Focus on transformation, not just information. Build traders who think and act like professionals.`
       },
       { role: 'user', content: prompt }
     ],
-    max_tokens: 2000, // Increased for more comprehensive content
-    temperature: 0.8, // Higher creativity for more engaging content
-    top_p: 0.9, // Better coherence
-    frequency_penalty: 0.1, // Reduce repetition
-    presence_penalty: 0.1 // Encourage diverse topics
+    max_tokens: 1200, // Optimized for Telegram post length
+    temperature: 0.75, // Balanced creativity and consistency
+    top_p: 0.85, // Focused coherence for educational content
+    frequency_penalty: 0.3, // Reduce repetition significantly
+    presence_penalty: 0.2 // Encourage topic diversity
   };
 
   console.log('Making OpenRouter API request with body:', JSON.stringify(body));
@@ -340,7 +415,7 @@ function sanitizeForTelegram(content) {
   
   console.log('Sanitizing content for Telegram, original length:', content.length);
   
-  // Replace unsupported HTML tags with Telegram-compatible alternatives
+  // First, let's fix any obvious HTML issues and convert unsupported tags
   let sanitized = content
     // Convert <ul> and <ol> lists to bullet points
     .replace(/<ul[^>]*>/gi, '')
@@ -370,12 +445,14 @@ function sanitizeForTelegram(content) {
     .replace(/<\/em>/gi, '</i>')
     
     // Remove any other unsupported HTML tags while preserving content
-    .replace(/<(?!\/?(b|i|u|s|code|pre|a\s)[^>]*>)[^>]+>/gi, '')
+    .replace(/<(?!\/?(b|i|u|s|code|pre|a\s)[^>]*>)[^>]+>/gi, '');
+
+  // Fix unmatched HTML tags for Telegram-supported tags (b, i, u, code)
+  sanitized = fixUnmatchedTags(sanitized);
     
-    // Clean up multiple consecutive newlines
+  // Clean up multiple consecutive newlines
+  sanitized = sanitized
     .replace(/\n{3,}/g, '\n\n')
-    
-    // Clean up spaces around newlines
     .replace(/\s*\n\s*/g, '\n')
     .trim();
   
@@ -390,270 +467,37 @@ function sanitizeForTelegram(content) {
   return sanitized;
 }
 
+// Fix unmatched HTML tags to ensure proper opening/closing pairs
+function fixUnmatchedTags(content) {
+  // Supported tags in Telegram: b, i, u, code, s, pre, a
+  const supportedTags = ['b', 'i', 'u', 'code', 's'];
+  
+  let fixed = content;
+  
+  // For each supported tag, ensure proper matching
+  supportedTags.forEach(tag => {
+    // Count opening and closing tags
+    const openingMatches = fixed.match(new RegExp(`<${tag}\\b[^>]*>`, 'gi')) || [];
+    const closingMatches = fixed.match(new RegExp(`</${tag}>`, 'gi')) || [];
+    
+    console.log(`Tag ${tag}: ${openingMatches.length} opening, ${closingMatches.length} closing`);
+    
+    // If unmatched, remove the problematic tags
+    if (openingMatches.length !== closingMatches.length) {
+      console.warn(`Unmatched ${tag} tags detected, removing all ${tag} tags`);
+      // Remove all instances of this tag to prevent parsing errors
+      fixed = fixed
+        .replace(new RegExp(`<${tag}\\b[^>]*>`, 'gi'), '')
+        .replace(new RegExp(`</${tag}>`, 'gi'), '');
+    }
+  });
+  
+  return fixed;
+}
+
 function fallbackText(topic) {
-  const tips = [
-    // Comprehensive Risk Management Guide
-    `🎯 <b>Master Risk Management: Your ${topic.charAt(0).toUpperCase() + topic.slice(1)} Trading Survival Guide</b> 📊
-⏱ Reading Time: 5 minutes | 🎯 Skill Level: All Levels
-
-🔥 <b>Why 90% of ${topic} traders fail:</b> They focus on profits while ignoring the one thing that determines long-term success—risk management.
-
-━━━━━━━━━━ Introduction ━━━━━━━━━━
-
-🔍 Understanding risk management is <b>crucial for long-term success</b> in ${topic} trading. In this comprehensive guide, we'll break down the essential components of professional risk management.
-
-━━━━━━━━━━ Core Principles ━━━━━━━━━━
-
-📌 <b>1. Position Sizing Fundamentals</b>
-
-• Never risk more than 1-2% per trade
-• Calculate position size based on:
-  ↳ Account balance
-  ↳ Stop loss distance
-  ↳ Market volatility
-
-⚠️ <b>WARNING:</b> <i>Overleveraging is the #1 reason traders blow their accounts!</i>
-
-🎯 <b>2. Strategic Stop Loss Placement</b>
-
-• Set stops <u>before</u> entering trades
-• Place at key technical levels:
-  ↳ Support/Resistance breaks
-  ↳ Trend line violations
-  ↳ Pattern invalidation points
-
-💡 <b>PRO TIP:</b> <i>Add 1-2% buffer for market noise</i>
-
-🔄 <b>3. Risk-Reward Optimization</b>
-
-• Target minimum 1:2 risk-reward ratio
-• Scale positions intelligently:
-  ↳ Reduce size after losses
-  ↳ Increase after verified edge
-  ↳ Match size to setup quality
-
-🏆 <b>WINNING STRATEGY:</b> <i>Start small, scale up with success</i>
-
-📊 <b>4. Portfolio Risk Management</b>
-
-• Monitor correlations between pairs
-• Max portfolio risk: 5-6% total
-• Diversify across:
-  ↳ Different timeframes
-  ↳ Multiple strategies
-  ↳ Uncorrelated assets
-
-⚠️ <b>CRITICAL:</b> <i>Never risk your entire portfolio on correlated positions!</i>
-
-🎯 <b>5. Implementation Checklist</b>
-
-<b>Before Trading:</b>
-✓ Calculate max position size
-✓ Set clear stop loss level
-✓ Define profit targets
-✓ Check correlations
-
-<b>During Trading:</b>
-✓ Monitor price action
-✓ Follow your plan
-✓ No emotional decisions
-
-<b>After Trading:</b>
-✓ Document everything
-✓ Calculate R:R ratio
-✓ Review performance
-✓ Update journal
-
-━━━━━━━━━━ Key Takeaways ━━━━━━━━━━
-
-🎯 <b>Remember These Points:</b>
-
-1️⃣ Position sizing is <u>non-negotiable</u>
-2️⃣ Always know your max loss
-3️⃣ Keep detailed trading records
-4️⃣ Scale positions wisely
-5️⃣ Review and adjust regularly
-
-⭐️ <b>GOLDEN RULE:</b> <i>Protection of capital comes first, profits second!</i>
-
-━━━━━━━━━━ Action Steps ━━━━━━━━━━
-
-📝 <b>Your Next Steps:</b>
-
-1. Calculate your per-trade risk limit
-2. Create a position sizing spreadsheet
-3. Start your trading journal today
-4. Review your last 10 trades
-5. Adjust your risk parameters
-
-🎓 <b>Final Thought:</b> <i>Success in ${topic} trading starts with mastering risk management. Start implementing these principles today!</i>
-
-#Trading #RiskManagement #${topic} #TradingEducation
-
-Remember: Professional traders focus on risk management first, profits second. Your primary goal should be capital preservation, which enables long-term participation in the markets.`,
-
-    // Comprehensive Technical Analysis Guide
-    `📈 Mastering Technical Analysis in ${topic} Trading
-
-A comprehensive approach to technical analysis combines multiple timeframes and indicators to identify high-probability trading opportunities. Here's your complete guide:
-
-1. Multiple Timeframe Analysis
-- Higher timeframes (Daily/Weekly): Identify primary trend
-- Medium timeframes (4H/1H): Find trading setups
-- Lower timeframes (15M/5M): Fine-tune entries
-- Always align trades with higher timeframe trend
-
-2. Key Technical Tools
-a) Price Action:
-   - Support and resistance levels
-   - Trend lines and channels
-   - Chart patterns
-   - Candlestick formations
-
-b) Indicators:
-   - Trend: Moving averages, MACD
-   - Momentum: RSI, Stochastic
-   - Volume: OBV, Volume Profile
-   - Volatility: Bollinger Bands, ATR
-
-3. Trading Strategy Integration
-- Combine price action with indicator confirmation
-- Use volume to validate breakouts
-- Monitor market structure for trend changes
-- Implement multiple confirmation signals
-
-4. Advanced Concepts
-- Order flow analysis
-- Market profile and volume profile
-- Fibonacci retracements and extensions
-- Elliot Wave Theory basics
-
-5. Practical Implementation
-Step 1: Market Analysis
-- Check higher timeframe trend
-- Identify key support/resistance
-- Note significant price levels
-
-Step 2: Setup Identification
-- Look for pattern formation
-- Check indicator alignment
-- Confirm with volume
-
-Step 3: Entry Execution
-- Wait for pattern completion
-- Verify indicator confirmation
-- Check risk-reward ratio
-
-Key Takeaways:
-1. Always start with higher timeframe analysis
-2. Use multiple confirmation tools
-3. Volume confirms price action
-4. Patterns repeat across timeframes
-5. Risk management trumps perfect entry
-
-Remember: Technical analysis is a probability tool, not a guarantee. Combine it with proper risk management for best results.`,
-
-    // Market Psychology and Discipline Guide  
-    `🧠 <b>Trading Psychology Mastery: Win the Mental Game in ${topic}</b> 🎯
-⏱ Reading Time: 4 minutes | 🎯 Level: Intermediate
-
-🔥 <b>The Hard Truth:</b> Your biggest enemy in ${topic} trading isn't the market—it's your own mind.
-
-━━━━━━━━━━ The Psychology Factor ━━━━━━━━━━
-
-📊 <b>Statistics That Matter:</b>
-• 80% of trading decisions are emotional, not logical
-• Fear and greed account for 90% of trading losses
-• Disciplined traders outperform by 15-25% annually
-
-🧠 <b>1. Emotional Control Framework</b>
-
-<b>The FEAR Response:</b>
-• <i>Fear of Missing Out (FOMO)</i> → Chasing pumps
-• <i>Fear of Loss</i> → Premature exits
-• <i>Fear of Being Wrong</i> → Ignoring stop losses
-
-💡 <b>SOLUTION:</b> <i>Pre-define your rules and stick to them religiously</i>
-
-<b>The GREED Trap:</b>
-• Overleveraging positions
-• Not taking profits at targets  
-• Adding to losing positions
-
-⚠️ <b>WARNING:</b> <i>Greed turns winning trades into disasters!</i>
-
-🎯 <b>2. Building Mental Discipline</b>
-
-<b>Pre-Market Routine:</b>
-✓ Review your trading plan
-✓ Set daily risk limits
-✓ Identify key levels and setups
-✓ Prepare for multiple scenarios
-
-<b>During Trading:</b>
-✓ Follow your predetermined rules
-✓ Take breaks every 2 hours
-✓ Avoid revenge trading
-✓ Document your emotions
-
-<b>Post-Trading Review:</b>
-✓ Analyze both wins and losses
-✓ Record emotional triggers
-✓ Identify improvement areas
-✓ Plan tomorrow's approach
-
-🔄 <b>3. The Discipline Multiplier</b>
-
-• <b>Rule #1:</b> Never risk more than 2% per trade
-• <b>Rule #2:</b> Always use stop losses
-• <b>Rule #3:</b> Take profits at predetermined levels
-• <b>Rule #4:</b> Never trade when emotional
-
-🏆 <b>WINNING MINDSET:</b> <i>Focus on process, not profits</i>
-
-📈 <b>4. Advanced Mental Techniques</b>
-
-<b>Visualization:</b>
-• Mentally rehearse perfect trade execution
-• Visualize handling losses calmly
-• Practice sticking to your plan under pressure
-
-<b>Meditation & Mindfulness:</b>
-• 10 minutes daily meditation
-• Practice present-moment awareness
-• Develop emotional detachment from outcomes
-
-<b>Journal Your Journey:</b>
-• Track emotional patterns
-• Record trigger situations  
-• Monitor psychological growth
-• Celebrate small wins
-
-━━━━━━━━━━ Key Takeaways ━━━━━━━━━━
-
-🎯 <b>Remember:</b>
-
-1️⃣ Trading is 20% strategy, 80% psychology
-2️⃣ Consistency beats perfection every time
-3️⃣ Discipline is your competitive advantage  
-4️⃣ Master yourself first, then the markets
-5️⃣ Process focus leads to profit results
-
-💪 <b>Your Action Plan:</b>
-
-1. Create a detailed trading plan with rules
-2. Start a trading journal today
-3. Practice meditation/mindfulness daily
-4. Set up accountability systems
-5. Review and refine weekly
-
-🎓 <b>Final Truth:</b> <i>The trader who controls their emotions controls their destiny in ${topic} markets. Start building that control today!</i>
-
-#TradingPsychology #${topic}Trading #Discipline #Mindset
-
-Remember: Markets are unpredictable, but your response to them doesn't have to be. Develop the mental edge that separates professionals from amateurs.`
-  ];
-  return tips[Math.floor(Math.random() * tips.length)];
+  // No fallback content - just indicate API is not working
+  return null;
 }
 
 function getUnsplashImageUrl(keywords) {
@@ -661,6 +505,54 @@ function getUnsplashImageUrl(keywords) {
   // Example: https://source.unsplash.com/1600x900/?crypto,finance
   const q = encodeURIComponent(keywords.join(','));
   return `https://source.unsplash.com/1600x900/?${q}`;
+}
+
+// Validate image URL before sending to Telegram
+async function validateImageUrl(imageUrl) {
+  console.log('Validating image URL:', imageUrl);
+  
+  try {
+    const response = await fetch(imageUrl, { method: 'HEAD' });
+    const contentType = response.headers.get('content-type');
+    const contentLength = response.headers.get('content-length');
+    
+    console.log('Image validation result:', {
+      status: response.status,
+      contentType,
+      contentLength,
+      url: imageUrl
+    });
+    
+    // Check if it's actually an image
+    if (!contentType || !contentType.startsWith('image/')) {
+      console.error('URL does not return an image. Content-Type:', contentType);
+      return false;
+    }
+    
+    // Check if image is too large (Telegram has limits)
+    if (contentLength && parseInt(contentLength) > 20 * 1024 * 1024) { // 20MB limit
+      console.error('Image too large:', contentLength);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error validating image URL:', error);
+    return false;
+  }
+}
+
+// Alternative image sources if Unsplash fails
+function getBackupImageUrl() {
+  const backupImages = [
+    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&h=900&fit=crop&crop=center', // Trading chart
+    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&h=900&fit=crop&crop=center', // Financial data
+    'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1600&h=900&fit=crop&crop=center', // Stock market
+    'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1600&h=900&fit=crop&crop=center', // Charts
+    'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&h=900&fit=crop&crop=center'  // Finance
+  ];
+  
+  return backupImages[Math.floor(Math.random() * backupImages.length)];
 }
 
 async function postToTelegram(botToken, chatId, caption, imageUrl) {
@@ -681,18 +573,36 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
 
   const endpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendPhoto`;
   
+  // Validate image URL before sending
+  console.log('Original image URL:', imageUrl);
+  let finalImageUrl = imageUrl;
+  
+  const isValidImage = await validateImageUrl(imageUrl);
+  if (!isValidImage) {
+    console.warn('Original image URL failed validation, using backup');
+    finalImageUrl = getBackupImageUrl();
+    
+    // Validate backup image too
+    const isBackupValid = await validateImageUrl(finalImageUrl);
+    if (!isBackupValid) {
+      console.warn('Backup image also failed, trying another backup');
+      finalImageUrl = getBackupImageUrl();
+    }
+  }
+  
   // Log the request details (excluding sensitive data)
   console.log('Sending to Telegram:', {
     endpoint: endpoint.replace(botToken, '[REDACTED]'),
     captionLength: caption?.length,
-    imageUrl: imageUrl?.substring(0, 50) + '...',
+    originalImageUrl: imageUrl?.substring(0, 50) + '...',
+    finalImageUrl: finalImageUrl?.substring(0, 50) + '...',
     chatId: chatId
   });
 
   // Prepare request body
   const body = {
     chat_id: chatId,
-    photo: imageUrl,
+    photo: finalImageUrl,
     caption: caption || '',
     parse_mode: 'HTML'
   };
@@ -742,12 +652,74 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
     console.log('Telegram post successful');
     return txt;
   } catch (error) {
-    console.error('Error posting to Telegram:', {
+    console.error('Error posting to Telegram with image:', {
       message: error.message,
       stack: error.stack,
       name: error.name
     });
-    throw error;
+    
+    // If image posting fails, try sending as text-only message
+    console.log('Attempting fallback: sending as text-only message');
+    try {
+      const fallbackEndpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`;
+      const fallbackBody = {
+        chat_id: chatId,
+        text: caption || 'Trading Education Content',
+        parse_mode: 'HTML'
+      };
+      
+      const fallbackRes = await fetchWithRetry(fallbackEndpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': 'TradingBot/1.0'
+        },
+        body: JSON.stringify(fallbackBody)
+      });
+      
+      const fallbackTxt = await fallbackRes.text();
+      if (fallbackRes.ok) {
+        console.log('Fallback text-only post successful');
+        return fallbackTxt;
+      } else {
+        console.error('Fallback also failed:', fallbackTxt);
+        
+        // If HTML parsing is still failing, try with plain text (no HTML)
+        console.log('Attempting final fallback: sending as plain text with no HTML');
+        try {
+          const plainTextCaption = caption.replace(/<[^>]*>/g, ''); // Strip all HTML tags
+          const finalFallbackBody = {
+            chat_id: chatId,
+            text: plainTextCaption || 'Trading Education Content - HTML formatting error',
+            parse_mode: undefined // No parsing mode = plain text
+          };
+          
+          const finalFallbackRes = await fetchWithRetry(fallbackEndpoint, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'User-Agent': 'TradingBot/1.0'
+            },
+            body: JSON.stringify(finalFallbackBody)
+          });
+          
+          const finalFallbackTxt = await finalFallbackRes.text();
+          if (finalFallbackRes.ok) {
+            console.log('Final plain text fallback successful');
+            return finalFallbackTxt;
+          } else {
+            console.error('All fallbacks failed:', finalFallbackTxt);
+            throw new Error(`All posting methods failed. Original: ${error.message}, HTML fallback: ${fallbackTxt}, Plain text: ${finalFallbackTxt}`);
+          }
+        } catch (finalError) {
+          console.error('Final fallback also failed:', finalError);
+          throw new Error(`All posting methods failed. Original: ${error.message}, Fallback: ${fallbackError.message}, Final: ${finalError.message}`);
+        }
+      }
+    } catch (fallbackError) {
+      console.error('Fallback text posting failed:', fallbackError);
+      throw new Error(`Both image and text posting failed. Original: ${error.message}, Fallback: ${fallbackError.message}`);
+    }
   }
 }
 
@@ -777,12 +749,16 @@ async function buildAndSend(env) {
       const scheduledModel = 'deepseek/deepseek-chat-v3.1:free';
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
     } catch (err) {
-      // fallback to template if AI call fails
+      // AI call failed - don't send anything
       console.error('OpenRouter call failed:', err.message);
-      caption = fallbackText(topic);
+      console.log('No fallback content available - skipping post');
+      throw new Error(`AI API not working: ${err.message}`);
     }
   } else {
-    caption = fallbackText(topic);
+    // No API key - don't send anything
+    console.error('No OpenRouter API key configured');
+    console.log('No API key available - skipping post');
+    throw new Error('OpenRouter API key not configured');
   }
 
   // Sanitize caption for Telegram
@@ -2154,12 +2130,22 @@ Remember: This should be professional-grade content that traders can immediately
               content = sanitizeForTelegram(content);
             } catch (aiError) {
               console.error('AI generation error:', aiError);
-              // Fallback to template if AI fails
-              content = fallbackText(market);
+              // No fallback - return error
+              return new Response(JSON.stringify({ 
+                error: 'AI API not working: ' + (aiError.message || 'Unknown error')
+              }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+              });
             }
           } else {
-            // If no API key, use fallback
-            content = fallbackText(market);
+            // No API key - return error
+            return new Response(JSON.stringify({ 
+              error: 'OpenRouter API key not configured' 
+            }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
           }
 
           return new Response(JSON.stringify({ content }), {
