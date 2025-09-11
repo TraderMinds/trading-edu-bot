@@ -1907,8 +1907,25 @@ No errors recorded yet
                 // Show detailed results
                 let message = \`Successfully added \${result.added} of \${result.total} subjects!\`;
                 
-                if (result.failed > 0) {
-                    message += \`\\n\${result.failed} subjects were skipped (duplicates, invalid format, etc.)\`;
+                if (result.failed && result.failed.length > 0) {
+                    message += \`\\n\${result.failed.length} subjects were skipped:\`;
+                    
+                    // Group failures by reason
+                    const failuresByReason = {};
+                    result.failed.forEach(failure => {
+                        if (!failuresByReason[failure.reason]) {
+                            failuresByReason[failure.reason] = [];
+                        }
+                        failuresByReason[failure.reason].push(failure.subject);
+                    });
+                    
+                    // Add detailed breakdown
+                    for (const [reason, subjects] of Object.entries(failuresByReason)) {
+                        message += \`\\n- \${reason}: \${subjects.length} subjects\`;
+                    }
+                    
+                    // Log full details to console for debugging
+                    console.log('Bulk add failures:', result.failed);
                 }
                 
                 showNotification(message, result.added > 0 ? 'success' : 'warning');
