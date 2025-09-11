@@ -35,9 +35,9 @@ async function getPostFooter(env) {
   } catch (error) {
     console.error('Error getting footer:', error);
     return {
-      companyName: "TradingBot Pro",
-      telegramChannel: "@tradingpro", 
-      website: "tradingbot.com",
+      companyName: "Trade with AI Mind",
+      telegramChannel: "@AITraderMind", 
+      website: "trader-mind-ai.ct.ws/index.html",
       enabled: true
     };
   }
