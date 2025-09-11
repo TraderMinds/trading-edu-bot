@@ -860,7 +860,7 @@ Keep it highly actionable and professional for serious traders.`;
   if (env.OPENROUTER_API_KEY) {
     try {
       // Use a balanced model for scheduled posts
-      const scheduledModel = 'deepseek/deepseek-chat-v3.1:free';
+      const scheduledModel = 'openai/gpt-oss-20b:free';
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
     } catch (err) {
       // AI call failed - don't send anything
