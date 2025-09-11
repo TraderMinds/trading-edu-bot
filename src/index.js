@@ -1016,6 +1016,9 @@ export default {
                             <button id="testPostBtn" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">
                                 <i class="fas fa-vial mr-2"></i>Test Post Now
                             </button>
+                            <button id="debugBtn" class="w-full bg-orange-600 text-white px-4 py-3 rounded-lg hover:bg-orange-700 transition-colors duration-200">
+                                <i class="fas fa-bug mr-2"></i>Debug Configuration
+                            </button>
                             <button id="exportQueueBtn" class="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200">
                                 <i class="fas fa-download mr-2"></i>Export Queue
                             </button>
@@ -1024,6 +1027,32 @@ export default {
                             </button>
                         </div>
                         <input type="file" id="importFile" accept=".json" class="hidden">
+                    </div>
+
+                    <!-- Debug Information -->
+                    <div id="debugPanel" class="bg-white rounded-lg shadow-lg p-6 card-hover hidden">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-microscope mr-2 text-red-600"></i>Debug Information
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-medium text-gray-700 mb-2">Environment Variables:</h4>
+                                <div id="envStatus" class="space-y-1 text-sm font-mono">
+                                    <div>TELEGRAM_BOT_TOKEN: <span class="loading">Checking...</span></div>
+                                    <div>TELEGRAM_CHAT_ID: <span class="loading">Checking...</span></div>
+                                    <div>OPENROUTER_API_KEY: <span class="loading">Checking...</span></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-medium text-gray-700 mb-2">Last Error Details:</h4>
+                                <pre id="lastError" class="text-sm bg-red-50 p-3 rounded border text-red-800 overflow-auto max-h-32">
+No errors recorded yet
+                                </pre>
+                            </div>
+                            <button id="clearDebugBtn" class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                                <i class="fas fa-eraser mr-2"></i>Clear Debug Info
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1626,12 +1655,90 @@ export default {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
-                if (!response.ok) throw new Error('Test post failed');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Store the error for debugging
+                    document.getElementById('lastError').textContent = 
+                        \`Status: \${response.status}\nError: \${data.error}\nDetails: \${data.details || 'No additional details'}\nTimestamp: \${data.timestamp || new Date().toISOString()}\`;
+                    throw new Error(data.error || 'Test post failed');
+                }
                 
                 showNotification('Test post sent successfully! 🚀', 'success');
                 await loadStats();
             } catch (error) {
+                console.error('Test post error:', error);
                 showNotification(\`Test post failed: \${error.message}\`, 'error');
+                
+                // Show debug panel automatically on error
+                document.getElementById('debugPanel').classList.remove('hidden');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function debugConfiguration() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            try {
+                showLoading(true);
+                const response = await fetch(\`\${API_BASE}/debug\`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Debug check failed');
+                }
+
+                // Update debug panel
+                document.getElementById('debugPanel').classList.remove('hidden');
+                
+                const envStatus = document.getElementById('envStatus');
+                envStatus.innerHTML = \`
+                    <div class="flex justify-between">
+                        <span>TELEGRAM_BOT_TOKEN:</span> 
+                        <span class="\${data.environment.hasBotToken ? 'text-green-600' : 'text-red-600'}">
+                            \${data.environment.hasBotToken ? '✓ Set' : '✗ Missing'}
+                            \${data.environment.hasBotToken ? \` (\${data.environment.botTokenLength} chars, \${data.environment.botTokenFormat})\` : ''}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>TELEGRAM_CHAT_ID:</span> 
+                        <span class="\${data.environment.hasChatId ? 'text-green-600' : 'text-red-600'}">
+                            \${data.environment.hasChatId ? '✓ Set' : '✗ Missing'}
+                            \${data.environment.hasChatId ? \` (\${data.environment.chatId}, \${data.environment.chatIdType})\` : ''}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>OPENROUTER_API_KEY:</span> 
+                        <span class="\${data.environment.hasOpenRouterKey ? 'text-green-600' : 'text-yellow-600'}">
+                            \${data.environment.hasOpenRouterKey ? '✓ Set' : '⚠ Missing (Optional)'}
+                            \${data.environment.hasOpenRouterKey ? \` (\${data.environment.openRouterKeyLength} chars)\` : ''}
+                        </span>
+                    </div>
+                    <div class="mt-3 pt-3 border-t">
+                        <div class="flex justify-between">
+                            <span>Configuration Status:</span> 
+                            <span class="\${data.validation.configurationComplete ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}">
+                                \${data.validation.configurationComplete ? '✓ READY' : '✗ INCOMPLETE'}
+                            </span>
+                        </div>
+                    </div>
+                \`;
+
+                // Show configuration instructions if incomplete
+                if (!data.validation.configurationComplete) {
+                    showNotification('Configuration incomplete! Check the debug panel for details.', 'error', 10000);
+                } else {
+                    showNotification('Configuration looks good! You can try the test post now.', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Debug check error:', error);
+                showNotification(\`Debug check failed: \${error.message}\`, 'error');
             } finally {
                 showLoading(false);
             }
@@ -1713,7 +1820,12 @@ export default {
         document.getElementById('saveFooterBtn').addEventListener('click', saveFooterSettings);
         document.getElementById('clearQueueBtn').addEventListener('click', clearQueue);
         document.getElementById('testPostBtn').addEventListener('click', testPost);
+        document.getElementById('debugBtn').addEventListener('click', debugConfiguration);
         document.getElementById('exportQueueBtn').addEventListener('click', exportQueue);
+        document.getElementById('clearDebugBtn').addEventListener('click', () => {
+            document.getElementById('lastError').textContent = 'No errors recorded yet';
+            document.getElementById('debugPanel').classList.add('hidden');
+        });
         
         // Bulk operations
         document.getElementById('bulkAddBtn').addEventListener('click', () => {
@@ -2031,35 +2143,104 @@ export default {
         }
       }
 
-      // Test post endpoint
-      if (path === '/api/test-post' && request.method === 'POST') {
+      // Debug endpoint
+      if (path === '/api/debug' && request.method === 'GET') {
         try {
-          console.log('Test post triggered - checking environment variables...');
-          console.log('Has bot token:', !!env.TELEGRAM_BOT_TOKEN);
-          console.log('Has chat ID:', !!env.TELEGRAM_CHAT_ID);
-          console.log('Has OpenRouter key:', !!env.OPENROUTER_API_KEY);
-          
-          if (!env.TELEGRAM_BOT_TOKEN) {
-            throw new Error('TELEGRAM_BOT_TOKEN is not configured');
-          }
-          if (!env.TELEGRAM_CHAT_ID) {
-            throw new Error('TELEGRAM_CHAT_ID is not configured');
-          }
-          
-          const result = await buildAndSend(env);
-          return new Response(JSON.stringify({ success: true, result }), {
+          const debugInfo = {
+            timestamp: new Date().toISOString(),
+            environment: {
+              hasBotToken: !!env.TELEGRAM_BOT_TOKEN,
+              botTokenLength: env.TELEGRAM_BOT_TOKEN?.length || 0,
+              botTokenFormat: env.TELEGRAM_BOT_TOKEN ? 
+                (env.TELEGRAM_BOT_TOKEN.includes(':') ? 'Valid format' : 'Invalid format (missing colon)') : 
+                'Not set',
+              hasChatId: !!env.TELEGRAM_CHAT_ID,
+              chatId: env.TELEGRAM_CHAT_ID || 'Not set',
+              chatIdType: env.TELEGRAM_CHAT_ID ? 
+                (env.TELEGRAM_CHAT_ID.toString().startsWith('-') ? 'Group/Channel' : 
+                 env.TELEGRAM_CHAT_ID.toString().startsWith('@') ? 'Username' : 'Private chat') : 'Not set',
+              hasOpenRouterKey: !!env.OPENROUTER_API_KEY,
+              openRouterKeyLength: env.OPENROUTER_API_KEY?.length || 0
+            },
+            validation: {
+              botTokenValid: env.TELEGRAM_BOT_TOKEN && 
+                           env.TELEGRAM_BOT_TOKEN.includes(':') && 
+                           env.TELEGRAM_BOT_TOKEN.length > 40,
+              chatIdValid: env.TELEGRAM_CHAT_ID && 
+                          env.TELEGRAM_CHAT_ID.toString().match(/^(-?\d+|@\w+)$/),
+              configurationComplete: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID)
+            }
+          };
+
+          return new Response(JSON.stringify(debugInfo), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
-          console.error('Test post error details:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
+          return new Response(JSON.stringify({ 
+            error: 'Debug check failed',
+            details: error.message 
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
           });
+        }
+      }
+
+      // Test post endpoint
+      if (path === '/api/test-post' && request.method === 'POST') {
+        try {
+          console.log('=== TEST POST STARTED ===');
+          console.log('Timestamp:', new Date().toISOString());
+          
+          // Environment check
+          console.log('Environment check:');
+          console.log('- TELEGRAM_BOT_TOKEN exists:', !!env.TELEGRAM_BOT_TOKEN);
+          console.log('- TELEGRAM_BOT_TOKEN length:', env.TELEGRAM_BOT_TOKEN?.length || 0);
+          console.log('- TELEGRAM_BOT_TOKEN format check:', env.TELEGRAM_BOT_TOKEN?.includes(':') ? 'PASS' : 'FAIL');
+          console.log('- TELEGRAM_CHAT_ID exists:', !!env.TELEGRAM_CHAT_ID);
+          console.log('- TELEGRAM_CHAT_ID value:', env.TELEGRAM_CHAT_ID);
+          console.log('- OPENROUTER_API_KEY exists:', !!env.OPENROUTER_API_KEY);
+          
+          if (!env.TELEGRAM_BOT_TOKEN) {
+            const error = 'TELEGRAM_BOT_TOKEN environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_BOT_TOKEN';
+            console.error('CRITICAL ERROR:', error);
+            throw new Error(error);
+          }
+          
+          if (!env.TELEGRAM_BOT_TOKEN.includes(':')) {
+            const error = 'TELEGRAM_BOT_TOKEN format is invalid. It should look like: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
+            console.error('CRITICAL ERROR:', error);
+            throw new Error(error);
+          }
+          
+          if (!env.TELEGRAM_CHAT_ID) {
+            const error = 'TELEGRAM_CHAT_ID environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_CHAT_ID';
+            console.error('CRITICAL ERROR:', error);
+            throw new Error(error);
+          }
+          
+          console.log('Environment validation passed, proceeding with test post...');
+          const result = await buildAndSend(env);
+          console.log('=== TEST POST COMPLETED SUCCESSFULLY ===');
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            result,
+            message: 'Test post sent successfully!'
+          }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('=== TEST POST FAILED ===');
+          console.error('Error name:', error.name);
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+          
           await updatePostingStats(env, false);
           return new Response(JSON.stringify({ 
             error: error.message,
-            details: error.stack 
+            details: error.stack,
+            timestamp: new Date().toISOString()
           }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
