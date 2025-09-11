@@ -1,3 +1,15 @@
 node_modules/
 .env
 .DS_Store
+*.log
+
+# Wrangler backups and temp files
+wrangler.toml.backup*
+wrangler.toml.bak
+wrangler.toml.old
+wrangler.toml.new
+.wrangler/
+
+# Env variants
+.env.*
+.env.local
