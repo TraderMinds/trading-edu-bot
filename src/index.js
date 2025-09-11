@@ -1848,6 +1848,9 @@ No errors recorded yet
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById('schedule').value = data.schedule || '0 * * * *';
+                    
+                    // Show schedule deployment status
+                    updateScheduleStatus(data);
                 } else {
                     document.getElementById('schedule').value = '0 * * * *';
                 }
@@ -1859,6 +1862,40 @@ No errors recorded yet
             
             // Calculate next post time after loading schedule
             calculateNextPost();
+        }
+
+        function updateScheduleStatus(data) {
+            // Create or update schedule status indicator
+            let statusElement = document.querySelector('.schedule-status');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.className = 'schedule-status';
+                statusElement.style.cssText = 'margin-top: 8px; font-size: 12px; padding: 8px; border-radius: 4px;';
+                
+                const scheduleContainer = document.getElementById('schedule').parentElement;
+                scheduleContainer.appendChild(statusElement);
+            }
+            
+            if (data.status === 'applied') {
+                statusElement.innerHTML = \`
+                    <div style="color: #28a745; background: #d4edda; padding: 6px; border-radius: 4px;">
+                        ✅ <strong>Active:</strong> Schedule is deployed and running
+                    </div>
+                \`;
+            } else if (data.status === 'pending_deployment') {
+                statusElement.innerHTML = \`
+                    <div style="color: #856404; background: #fff3cd; padding: 6px; border-radius: 4px;">
+                        ⚠️ <strong>Pending:</strong> Schedule updated but needs deployment
+                        <br><small>Commands: <code>npm run update-schedule "\${data.schedule}" && npm run deploy</code></small>
+                    </div>
+                \`;
+            } else {
+                statusElement.innerHTML = \`
+                    <div style="color: #6c757d; background: #f8f9fa; padding: 6px; border-radius: 4px;">
+                        ℹ️ <strong>Default:</strong> Using standard schedule
+                    </div>
+                \`;
+            }
         }
 
         async function updateSchedule() {
@@ -1883,15 +1920,40 @@ No errors recorded yet
                 if (!response.ok) throw new Error('Schedule update failed');
                 
                 const data = await response.json();
-                showStatus(\`Schedule updated successfully! \${data.message || ''}\`);
                 
-                // Show warning about manual deployment if provided
-                if (data.warning) {
-                    showNotification(data.warning, 'warning');
+                // Show detailed status with deployment instructions
+                if (data.status === 'pending_deployment') {
+                    showStatus(\`📅 Schedule updated in memory! Now needs deployment to activate.\`, 'warning');
+                    
+                    // Create detailed instructions popup
+                    const instructionsHtml = \`
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                            <h4>⚠️ Deployment Required</h4>
+                            <p><strong>Current:</strong> \${data.currentSchedule}</p>
+                            <p><strong>New:</strong> \${data.newSchedule}</p>
+                            <p><strong>Status:</strong> Pending deployment</p>
+                            
+                            <h5>Quick Deploy Commands:</h5>
+                            <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace;">
+                                \${data.quickCommands.map(cmd => \`<div>\${cmd}</div>\`).join('')}
+                            </div>
+                            
+                            <p><small>After deployment, refresh this page to see "Applied" status.</small></p>
+                        </div>
+                    \`;
+                    
+                    // Show in status area
+                    document.getElementById('status').innerHTML = instructionsHtml;
+                } else {
+                    showStatus(\`✅ Schedule updated and active!\`, 'success');
                 }
                 
                 // Recalculate next post time
                 calculateNextPost();
+                
+                // Update schedule status display
+                updateScheduleStatus(data);
+                
             } catch (error) {
                 showStatus(\`Failed to update schedule: \${error.message}\`, 'error');
             }
@@ -2968,7 +3030,27 @@ Remember: This should be professional-grade content that traders can immediately
         try {
           // Get current schedule from KV storage or default
           const schedule = await env.SUBJECTS_QUEUE.get('schedule') || '0 * * * *';
-          return new Response(JSON.stringify({ schedule }), {
+          const scheduleStatusRaw = await env.SUBJECTS_QUEUE.get('schedule_status');
+          
+          let scheduleStatus = null;
+          if (scheduleStatusRaw) {
+            try {
+              scheduleStatus = JSON.parse(scheduleStatusRaw);
+            } catch (e) {
+              // Ignore parsing errors
+            }
+          }
+          
+          // Determine if schedule is applied based on deployment
+          const isApplied = !scheduleStatus || scheduleStatus.schedule === schedule;
+          
+          return new Response(JSON.stringify({ 
+            schedule,
+            status: isApplied ? 'applied' : 'pending_deployment',
+            lastUpdated: scheduleStatus?.updatedAt,
+            previousSchedule: scheduleStatus?.previousSchedule,
+            deploymentRequired: !isApplied
+          }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
@@ -2997,24 +3079,38 @@ Remember: This should be professional-grade content that traders can immediately
             throw new Error('Invalid cron expression. Expected 5 or 6 parts (minute hour day month weekday [year])');
           }
           
-          // Store the schedule in KV
+          // Store the schedule in KV with timestamp
+          const scheduleUpdate = {
+            schedule,
+            updatedAt: new Date().toISOString(),
+            applied: false,
+            previousSchedule: await env.SUBJECTS_QUEUE.get('schedule') || '0 * * * *'
+          };
+          
           await env.SUBJECTS_QUEUE.put('schedule', schedule);
+          await env.SUBJECTS_QUEUE.put('schedule_status', JSON.stringify(scheduleUpdate));
           
           console.warn('Schedule updated to:', schedule);
-          
-          // Note: In a real deployment, you would also need to update the wrangler.toml
-          // and redeploy the worker. For now, we'll just store it for future use.
           
           return new Response(JSON.stringify({ 
             success: true,
             schedule,
-            message: 'Schedule updated successfully. To apply this schedule, follow these steps:',
-            warning: 'IMPORTANT: Update wrangler.toml and redeploy to activate new schedule',
+            message: 'Schedule updated in memory. To fully activate, follow these steps:',
+            status: 'pending_deployment',
+            currentSchedule: scheduleUpdate.previousSchedule,
+            newSchedule: schedule,
+            warning: '⚠️ IMPORTANT: Worker will continue using old schedule until redeployed',
             instructions: [
-              '1. Open wrangler.toml file',
-              `2. Change crons = ["0 * * * *"] to crons = ["${schedule}"]`,
-              '3. Run: npm run deploy',
-              '4. Verify in deployment output that schedule shows your new cron'
+              '1. Update wrangler.toml manually OR run the helper script:',
+              `   npm run update-schedule "${schedule}"`,
+              '2. Deploy the updated worker:',
+              '   npm run deploy',
+              '3. Verify the new schedule is active in deployment logs',
+              '4. Refresh this page to see "Applied" status'
+            ],
+            quickCommands: [
+              `npm run update-schedule "${schedule}"`,
+              'npm run deploy'
             ]
           }), {
             headers: { 'Content-Type': 'application/json' }
