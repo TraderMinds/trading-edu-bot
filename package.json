@@ -10,16 +10,19 @@
     "update-schedule": "node scripts/update-schedule.js"
   },
   "dependencies": {
+    "express": "^5.1.0",
     "wrangler": "^4.35.0"
   },
   "devDependencies": {
-    "jest": "^29.0.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^8.0.0",
+    "jest": "^29.0.0",
     "prettier": "^2.0.0"
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   }
 }

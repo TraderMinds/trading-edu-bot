@@ -3318,6 +3318,121 @@ Remember: This should be professional-grade content that traders can immediately
         }
       }
 
+      // Test local connection via ngrok
+      if (path === '/api/test-local' && request.method === 'GET') {
+        try {
+          // Replace with your actual ngrok URL
+          const NGROK_URL = 'https://5a61ec351821.ngrok-free.app';
+          
+          console.warn('Testing connection to local server via ngrok:', NGROK_URL);
+          
+          // Test basic connection
+          const statusResponse = await fetch(`${NGROK_URL}/api/status`, {
+            headers: {
+              'User-Agent': 'Cloudflare-Worker/1.0',
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true'  // Skip ngrok warning page
+            }
+          });
+          
+          if (!statusResponse.ok) {
+            throw new Error(`Status endpoint failed: ${statusResponse.status}`);
+          }
+          
+          const statusData = await statusResponse.json();
+          
+          // Send data to local server
+          const dataResponse = await fetch(`${NGROK_URL}/api/data`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'User-Agent': 'Cloudflare-Worker/1.0',
+              'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({
+              message: 'Hello from Cloudflare Worker!',
+              timestamp: new Date().toISOString(),
+              worker_location: request.cf?.colo || 'unknown',
+              test_purpose: 'Validating ngrok tunnel connection'
+            })
+          });
+          
+          const dataResult = await dataResponse.json();
+          
+          // Test local AI endpoint
+          const aiResponse = await fetch(`${NGROK_URL}/api/generate`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'User-Agent': 'Cloudflare-Worker/1.0',
+              'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({
+              model: 'local-test-model',
+              prompt: 'Generate a test response about cryptocurrency trading basics'
+            })
+          });
+          
+          const aiResult = await aiResponse.json();
+          
+          return new Response(JSON.stringify({
+            success: true,
+            connection_status: 'Connected successfully via ngrok!',
+            ngrok_url: NGROK_URL,
+            tests: {
+              status_check: {
+                success: true,
+                data: statusData
+              },
+              data_exchange: {
+                success: true,
+                sent: {
+                  message: 'Hello from Cloudflare Worker!',
+                  timestamp: new Date().toISOString()
+                },
+                received: dataResult
+              },
+              local_ai_test: {
+                success: true,
+                request: {
+                  model: 'local-test-model',
+                  prompt: 'Generate a test response about cryptocurrency trading basics'
+                },
+                response: aiResult
+              }
+            },
+            performance: {
+              total_time: Date.now(),
+              network_info: {
+                worker_location: request.cf?.colo || 'unknown',
+                country: request.cf?.country || 'unknown',
+                ip: request.headers.get('CF-Connecting-IP') || 'unknown'
+              }
+            }
+          }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+        } catch (error) {
+          console.error('Local connection test failed:', error);
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Failed to connect to local server',
+            details: error.message,
+            ngrok_url: 'https://5a61ec351821.ngrok-free.app',
+            troubleshooting: {
+              check_ngrok: 'Ensure ngrok is running: ngrok http 3000',
+              check_local_server: 'Ensure local server is running: node local-test-server.js',
+              check_firewall: 'Verify Windows Firewall allows Node.js connections',
+              update_url: 'Update NGROK_URL in this endpoint with your current ngrok URL'
+            }
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
       // Return 404 for unknown API endpoints
       return new Response('Not Found', { status: 404 });
     }
