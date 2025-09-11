@@ -930,8 +930,97 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Serve UI files
+    // Public landing page (business site)
     if (path === '/' || path === '/index.html') {
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trading Education — Learn, Grow, Profit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta name="description" content="Daily trading education posts with actionable strategies and insights." />
+</head>
+<body class="min-h-screen bg-gray-50">
+  <header class="bg-gray-900 text-white">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
+      <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i>Trading Education</h1>
+      <nav class="space-x-4 text-sm">
+        <a href="#features" class="hover:underline">Features</a>
+        <a href="#how-it-works" class="hover:underline">How it works</a>
+        <a href="#contact" class="hover:underline">Contact</a>
+        <a href="/admin" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded">Admin</a>
+      </nav>
+    </div>
+    <div class="max-w-6xl mx-auto px-6 pb-12">
+      <h2 class="text-4xl md:text-5xl font-extrabold leading-tight">Level up your trading with daily, actionable education</h2>
+      <p class="mt-4 text-gray-300 max-w-2xl">Curated lessons on strategy, psychology, and risk — delivered on schedule to your Telegram audience.</p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium">
+          <i class="fab fa-telegram mr-2"></i>Join the Channel
+        </a>
+        <a href="/admin" class="bg-white text-gray-900 hover:bg-gray-100 px-5 py-3 rounded-lg font-medium">
+          <i class="fas fa-gauge-high mr-2"></i>Admin Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-12" id="features">
+    <h3 class="text-2xl font-bold mb-6">Why traders love this channel</h3>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <div class="text-2xl">📚</div>
+        <h4 class="font-semibold mt-3">Expert Lessons</h4>
+        <p class="text-sm text-gray-600 mt-2">Clear content across technicals, psychology, and risk.</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <div class="text-2xl">⏰</div>
+        <h4 class="font-semibold mt-3">On Your Schedule</h4>
+        <p class="text-sm text-gray-600 mt-2">Consistent posting via minute-level cron schedules.</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <div class="text-2xl">💬</div>
+        <h4 class="font-semibold mt-3">Telegram-Optimized</h4>
+        <p class="text-sm text-gray-600 mt-2">Actionable formats crafted for Telegram.</p>
+      </div>
+    </div>
+
+    <section id="how-it-works" class="mt-12">
+      <h3 class="text-2xl font-bold mb-4">How it works</h3>
+      <ol class="list-decimal ml-5 space-y-2 text-gray-700">
+        <li>Join the Telegram channel to receive daily content.</li>
+        <li>We publish on a fixed schedule (configurable by the admin).</li>
+        <li>Content blends expert knowledge and AI assistance.</li>
+      </ol>
+    </section>
+
+    <section id="contact" class="mt-12">
+      <h3 class="text-2xl font-bold mb-4">Get in touch</h3>
+      <p class="text-gray-700">For partnerships/inquiries: <span class="font-mono">@tradingpro</span></p>
+    </section>
+  </main>
+
+  <footer class="py-8 text-center text-sm text-gray-500">
+    © <span id="year"></span> Trading Education. All rights reserved.
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>`;
+      return new Response(html, {
+        headers: {
+          'Content-Type': 'text/html',
+          'Cache-Control': 'public, max-age=900'
+        }
+      });
+    }
+
+  // Serve Admin UI
+  if (path === '/admin') {
       // Serve the UI content directly
       const html = `<!DOCTYPE html>
 <html lang="en">
