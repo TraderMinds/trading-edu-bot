@@ -3437,7 +3437,7 @@ Remember: This should be professional-grade content that traders can immediately
       if (path === '/api/test-local' && request.method === 'GET') {
         try {
           // Replace with your actual ngrok URL
-          const NGROK_URL = 'https://5a61ec351821.ngrok-free.app';
+          const NGROK_URL = 'https://28b49b5311b0.ngrok-free.app';
           
           console.warn('Testing connection to local server via ngrok:', NGROK_URL);
           
@@ -3534,7 +3534,7 @@ Remember: This should be professional-grade content that traders can immediately
             success: false,
             error: 'Failed to connect to local server',
             details: error.message,
-            ngrok_url: 'https://5a61ec351821.ngrok-free.app',
+            ngrok_url: 'https://28b49b5311b0.ngrok-free.app',
             troubleshooting: {
               check_ngrok: 'Ensure ngrok is running: ngrok http 3000',
               check_local_server: 'Ensure local server is running: node local-test-server.js',
