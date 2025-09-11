@@ -2875,7 +2875,7 @@ No errors recorded yet
           success: false,
           error: 'Failed to connect to local server',
           details: error.message,
-          ngrok_url: 'https://5a61ec351821.ngrok-free.app',
+          ngrok_url: 'https://28b49b5311b0.ngrok-free.app',
           troubleshooting: {
             check_ngrok: 'Ensure ngrok is running: ngrok http 3000',
             check_local_server: 'Ensure local server is running: node local-test-server.js',
