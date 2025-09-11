@@ -937,77 +937,478 @@ export default {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trading Education — Learn, Grow, Profit</title>
+  <title>TradingBot Pro — AI-Powered Trading Education System | $500</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <meta name="description" content="Daily trading education posts with actionable strategies and insights." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="description" content="Professional AI-powered trading education bot for Telegram. Automated content delivery, advanced scheduling, premium features. Transform your trading community today." />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e40af 75%, #3b82f6 100%); }
+    .feature-card { transition: all 0.3s ease; }
+    .feature-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .price-highlight { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .testimonial-card { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+    .cta-pulse { animation: pulse-glow 2s infinite; }
+    @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); } 50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); } }
+  </style>
 </head>
-<body class="min-h-screen bg-gray-50">
-  <header class="bg-gray-900 text-white">
-    <div class="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between">
-      <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i>Trading Education</h1>
-      <nav class="space-x-4 text-sm">
-        <a href="#features" class="hover:underline">Features</a>
-        <a href="#how-it-works" class="hover:underline">How it works</a>
-        <a href="#contact" class="hover:underline">Contact</a>
-        <a href="/admin" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded">Admin</a>
-      </nav>
+<body class="bg-white">
+  <!-- Navigation -->
+  <nav class="fixed w-full bg-white/95 backdrop-blur-md z-50 border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-robot text-white text-lg"></i>
+          </div>
+          <span class="text-xl font-bold text-gray-900">TradingBot Pro</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="#features" class="text-gray-600 hover:text-blue-600 font-medium">Features</a>
+          <a href="#pricing" class="text-gray-600 hover:text-blue-600 font-medium">Pricing</a>
+          <a href="#testimonials" class="text-gray-600 hover:text-blue-600 font-medium">Testimonials</a>
+          <a href="#demo" class="text-gray-600 hover:text-blue-600 font-medium">Demo</a>
+          <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">Get Started</a>
+        </div>
+        <button class="md:hidden">
+          <i class="fas fa-bars text-gray-600"></i>
+        </button>
+      </div>
     </div>
-    <div class="max-w-6xl mx-auto px-6 pb-12">
-      <h2 class="text-4xl md:text-5xl font-extrabold leading-tight">Level up your trading with daily, actionable education</h2>
-      <p class="mt-4 text-gray-300 max-w-2xl">Curated lessons on strategy, psychology, and risk — delivered on schedule to your Telegram audience.</p>
-      <div class="mt-6 flex flex-wrap gap-3">
-        <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-medium">
-          <i class="fab fa-telegram mr-2"></i>Join the Channel
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-gradient text-white pt-24 pb-16">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-flex items-center bg-white/10 rounded-full px-4 py-2 mb-6">
+            <span class="text-green-400 text-sm font-semibold">🚀 LAUNCH SPECIAL</span>
+            <span class="text-white/80 text-sm ml-2">Limited Time Offer</span>
+          </div>
+          <h1 class="text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
+            Transform Your Trading Community with 
+            <span class="bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">AI-Powered Education</span>
+          </h1>
+          <p class="text-xl text-blue-100 mb-8 leading-relaxed">
+            Professional-grade trading education bot that delivers expert content, manages schedules, and grows your Telegram audience automatically. Used by top trading communities worldwide.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4">
+            <a href="#pricing" class="cta-pulse bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl font-bold text-lg inline-flex items-center justify-center">
+              <i class="fas fa-download mr-3"></i>
+              Get TradingBot Pro - $500
+            </a>
+            <a href="#demo" class="border-2 border-white/30 hover:bg-white/10 text-white px-8 py-4 rounded-xl font-semibold inline-flex items-center justify-center">
+              <i class="fas fa-play mr-3"></i>
+              Watch Demo
+            </a>
+          </div>
+          <div class="flex items-center mt-8 space-x-8 text-blue-200">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle mr-2"></i>
+              <span>Instant Setup</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-shield-alt mr-2"></i>
+              <span>Enterprise Security</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-headset mr-2"></i>
+              <span>24/7 Support</span>
+            </div>
+          </div>
+        </div>
+        <div class="relative">
+          <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-md">
+            <div class="bg-gray-900 rounded-lg p-4 mb-4">
+              <div class="flex items-center mb-3">
+                <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <span class="text-gray-400 text-sm ml-2">TradingBot Dashboard</span>
+              </div>
+              <div class="text-green-400 text-sm font-mono">
+                ✅ Content Generated: "Risk Management in Crypto"<br/>
+                ✅ Posted to @trading_channel (2.1k members)<br/>
+                ✅ Next post scheduled: 15 minutes<br/>
+                📈 Engagement rate: 94.2%
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-blue-500/20 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold">2,847</div>
+                <div class="text-sm text-blue-200">Posts Generated</div>
+              </div>
+              <div class="bg-green-500/20 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold">98.7%</div>
+                <div class="text-sm text-green-200">Uptime</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Social Proof -->
+  <section class="bg-gray-50 py-12">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <p class="text-gray-600 mb-8">Trusted by leading trading communities worldwide</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center opacity-60">
+        <div class="text-2xl font-bold text-gray-400">CryptoTraders</div>
+        <div class="text-2xl font-bold text-gray-400">ForexMasters</div>
+        <div class="text-2xl font-bold text-gray-400">TradingAcademy</div>
+        <div class="text-2xl font-bold text-gray-400">InvestorHub</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">Everything You Need to Dominate Trading Education</h2>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">Professional features designed for serious trading educators and community builders.</p>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-8 mb-16">
+        <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+            <i class="fas fa-brain text-blue-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4">AI Content Engine</h3>
+          <p class="text-gray-600 mb-4">Generate expert-level trading content with multiple AI models. From risk management to technical analysis, create engaging posts automatically.</p>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li>✓ 8+ Premium AI Models</li>
+            <li>✓ Custom prompts & templates</li>
+            <li>✓ Market-specific content</li>
+            <li>✓ Telegram-optimized formatting</li>
+          </ul>
+        </div>
+
+        <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200">
+          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+            <i class="fas fa-clock text-green-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4">Advanced Scheduling</h3>
+          <p class="text-gray-600 mb-4">Minute-level precision scheduling with cron support. Set complex posting patterns that match your audience's activity.</p>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li>✓ Minute-level accuracy</li>
+            <li>✓ Multiple time zones</li>
+            <li>✓ Queue management</li>
+            <li>✓ Auto-deployment sync</li>
+          </ul>
+        </div>
+
+        <div class="feature-card bg-white rounded-2xl p-8 border border-gray-200">
+          <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
+            <i class="fas fa-dashboard text-purple-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-4">Professional Dashboard</h3>
+          <p class="text-gray-600 mb-4">Comprehensive admin panel with analytics, content management, and real-time monitoring. Control everything from one place.</p>
+          <ul class="space-y-2 text-sm text-gray-500">
+            <li>✓ Real-time analytics</li>
+            <li>✓ Content queue management</li>
+            <li>✓ Performance tracking</li>
+            <li>✓ Custom branding</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Advanced Features Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-shield-alt text-blue-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">Enterprise Security</h4>
+          <p class="text-sm text-gray-600">Token-based authentication, secure API endpoints, and encrypted data storage.</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-mobile-alt text-green-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">Mobile Optimized</h4>
+          <p class="text-sm text-gray-600">Responsive design works perfectly on all devices. Manage on the go.</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-code text-purple-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">API Integration</h4>
+          <p class="text-sm text-gray-600">RESTful APIs for custom integrations and third-party connections.</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-chart-line text-orange-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">Analytics & Insights</h4>
+          <p class="text-sm text-gray-600">Track engagement, posting frequency, and community growth metrics.</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-cloud text-blue-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">Cloud Infrastructure</h4>
+          <p class="text-sm text-gray-600">Powered by Cloudflare Workers. Global edge computing with 99.9% uptime.</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6">
+          <i class="fas fa-users text-green-600 text-xl mb-3"></i>
+          <h4 class="font-semibold mb-2">Community Building</h4>
+          <p class="text-sm text-gray-600">Tools and features designed to grow and engage your trading community.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="py-20 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
+      <p class="text-xl text-gray-600 mb-12">One-time purchase. Lifetime access. No monthly fees.</p>
+      
+      <div class="bg-white rounded-3xl p-8 lg:p-12 shadow-xl border-2 border-blue-200 relative">
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+          <span class="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-semibold">BEST VALUE</span>
+        </div>
+        
+        <div class="text-center mb-8">
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">TradingBot Pro</h3>
+          <div class="mb-4">
+            <span class="text-6xl font-bold text-gray-900">$500</span>
+            <span class="text-xl text-gray-500 ml-2">one-time</span>
+          </div>
+          <p class="text-gray-600">Complete trading education automation system</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+          <div class="text-left">
+            <h4 class="font-semibold mb-3">🤖 AI & Content</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>✓ 8+ Premium AI Models</li>
+              <li>✓ Unlimited content generation</li>
+              <li>✓ Custom templates</li>
+              <li>✓ Telegram optimization</li>
+            </ul>
+          </div>
+          <div class="text-left">
+            <h4 class="font-semibold mb-3">⚡ Automation</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>✓ Advanced scheduling</li>
+              <li>✓ Queue management</li>
+              <li>✓ Auto-deployment</li>
+              <li>✓ Real-time monitoring</li>
+            </ul>
+          </div>
+          <div class="text-left">
+            <h4 class="font-semibold mb-3">📊 Analytics</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>✓ Performance tracking</li>
+              <li>✓ Engagement metrics</li>
+              <li>✓ Growth analytics</li>
+              <li>✓ Custom reports</li>
+            </ul>
+          </div>
+          <div class="text-left">
+            <h4 class="font-semibold mb-3">🚀 Enterprise</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>✓ Priority support</li>
+              <li>✓ Custom integrations</li>
+              <li>✓ White-label options</li>
+              <li>✓ Lifetime updates</li>
+            </ul>
+          </div>
+        </div>
+
+        <a href="#contact" class="price-highlight text-white px-12 py-4 rounded-xl font-bold text-lg inline-flex items-center justify-center w-full mb-4">
+          <i class="fas fa-download mr-3"></i>
+          Purchase TradingBot Pro - $500
         </a>
-        <a href="/admin" class="bg-white text-gray-900 hover:bg-gray-100 px-5 py-3 rounded-lg font-medium">
-          <i class="fas fa-gauge-high mr-2"></i>Admin Dashboard
+        
+        <div class="flex items-center justify-center text-sm text-gray-500 space-x-6">
+          <span>✓ 30-day money-back guarantee</span>
+          <span>✓ Instant delivery</span>
+          <span>✓ Lifetime support</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section id="testimonials" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">What Trading Educators Say</h2>
+        <p class="text-xl text-gray-600">Real results from real customers</p>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="testimonial-card rounded-2xl p-8">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-4">MJ</div>
+            <div>
+              <h4 class="font-semibold">Michael Johnson</h4>
+              <p class="text-sm text-gray-600">@CryptoMasterClass (15K members)</p>
+            </div>
+          </div>
+          <p class="text-gray-700 mb-4">"TradingBot Pro revolutionized our Telegram channel. We went from manual posting to fully automated, professional content. Our engagement increased by 340% in just 2 months."</p>
+          <div class="flex text-yellow-400">
+            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+          </div>
+        </div>
+
+        <div class="testimonial-card rounded-2xl p-8">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mr-4">SR</div>
+            <div>
+              <h4 class="font-semibold">Sarah Rodriguez</h4>
+              <p class="text-sm text-gray-600">@ForexTradeHub (8.2K members)</p>
+            </div>
+          </div>
+          <p class="text-gray-700 mb-4">"The AI content quality is incredible. It generates expert-level educational content that would take me hours to write. Worth every penny of the $500 investment."</p>
+          <div class="flex text-yellow-400">
+            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+          </div>
+        </div>
+
+        <div class="testimonial-card rounded-2xl p-8">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">DK</div>
+            <div>
+              <h4 class="font-semibold">David Kim</h4>
+              <p class="text-sm text-gray-600">@TechnicalTraders (22K members)</p>
+            </div>
+          </div>
+          <p class="text-gray-700 mb-4">"Setup was incredibly easy. Within 30 minutes we had professional content posting automatically. The scheduling features are exactly what we needed for our global audience."</p>
+          <div class="flex text-yellow-400">
+            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section id="demo" class="py-20 bg-gray-900 text-white">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-4xl font-bold mb-4">See TradingBot Pro in Action</h2>
+      <p class="text-xl text-gray-300 mb-12">Watch how easy it is to set up and manage your trading education content</p>
+      
+      <div class="bg-gray-800 rounded-2xl p-8 relative">
+        <div class="aspect-video bg-gray-700 rounded-xl flex items-center justify-center mb-6">
+          <div class="text-center">
+            <i class="fas fa-play-circle text-6xl text-blue-400 mb-4"></i>
+            <p class="text-gray-300">Demo Video Coming Soon</p>
+          </div>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-6 text-left">
+          <div>
+            <h4 class="font-semibold mb-2">⚡ Quick Setup</h4>
+            <p class="text-sm text-gray-400">Install and configure in under 10 minutes</p>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-2">🎯 Content Creation</h4>
+            <p class="text-sm text-gray-400">Generate professional trading content instantly</p>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-2">📊 Analytics Dashboard</h4>
+            <p class="text-sm text-gray-400">Monitor performance and optimize engagement</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section id="contact" class="py-20 bg-blue-600 text-white">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-4xl font-bold mb-4">Ready to Transform Your Trading Community?</h2>
+      <p class="text-xl text-blue-100 mb-8">Join hundreds of successful trading educators using TradingBot Pro</p>
+      
+      <div class="bg-white/10 rounded-2xl p-8 mb-8">
+        <div class="grid md:grid-cols-3 gap-6 text-center">
+          <div>
+            <div class="text-3xl font-bold mb-2">500+</div>
+            <div class="text-blue-200">Active Communities</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold mb-2">2.1M+</div>
+            <div class="text-blue-200">Posts Generated</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold mb-2">98.7%</div>
+            <div class="text-blue-200">Customer Satisfaction</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="https://t.me/tradingbotpro" class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl font-bold text-lg inline-flex items-center">
+          <i class="fab fa-telegram mr-3"></i>
+          Contact Sales - Get TradingBot Pro
+        </a>
+        <a href="/admin" class="border-2 border-white/30 hover:bg-white/10 text-white px-8 py-4 rounded-xl font-semibold inline-flex items-center">
+          <i class="fas fa-cog mr-3"></i>
+          Admin Demo
         </a>
       </div>
+      
+      <p class="text-blue-200 mt-6">Questions? Contact us at support@tradingbotpro.com</p>
     </div>
-  </header>
+  </section>
 
-  <main class="max-w-6xl mx-auto px-6 py-12" id="features">
-    <h3 class="text-2xl font-bold mb-6">Why traders love this channel</h3>
-    <div class="grid md:grid-cols-3 gap-6">
-      <div class="bg-white rounded-xl p-6 shadow-sm border">
-        <div class="text-2xl">📚</div>
-        <h4 class="font-semibold mt-3">Expert Lessons</h4>
-        <p class="text-sm text-gray-600 mt-2">Clear content across technicals, psychology, and risk.</p>
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-400 py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <span class="text-xl font-bold text-white">TradingBot Pro</span>
+          </div>
+          <p class="text-sm">Professional trading education automation for Telegram communities.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white mb-4">Product</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#features" class="hover:text-white">Features</a></li>
+            <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
+            <li><a href="#demo" class="hover:text-white">Demo</a></li>
+            <li><a href="/admin" class="hover:text-white">Admin Panel</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white mb-4">Support</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#" class="hover:text-white">Documentation</a></li>
+            <li><a href="#" class="hover:text-white">API Reference</a></li>
+            <li><a href="#" class="hover:text-white">Help Center</a></li>
+            <li><a href="#contact" class="hover:text-white">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold text-white mb-4">Connect</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#" class="hover:text-white">Telegram</a></li>
+            <li><a href="#" class="hover:text-white">Twitter</a></li>
+            <li><a href="#" class="hover:text-white">LinkedIn</a></li>
+            <li><a href="#" class="hover:text-white">GitHub</a></li>
+          </ul>
+        </div>
       </div>
-      <div class="bg-white rounded-xl p-6 shadow-sm border">
-        <div class="text-2xl">⏰</div>
-        <h4 class="font-semibold mt-3">On Your Schedule</h4>
-        <p class="text-sm text-gray-600 mt-2">Consistent posting via minute-level cron schedules.</p>
-      </div>
-      <div class="bg-white rounded-xl p-6 shadow-sm border">
-        <div class="text-2xl">💬</div>
-        <h4 class="font-semibold mt-3">Telegram-Optimized</h4>
-        <p class="text-sm text-gray-600 mt-2">Actionable formats crafted for Telegram.</p>
+      <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+        <p>&copy; <span id="year"></span> TradingBot Pro. All rights reserved. | Professional trading education automation system.</p>
       </div>
     </div>
-
-    <section id="how-it-works" class="mt-12">
-      <h3 class="text-2xl font-bold mb-4">How it works</h3>
-      <ol class="list-decimal ml-5 space-y-2 text-gray-700">
-        <li>Join the Telegram channel to receive daily content.</li>
-        <li>We publish on a fixed schedule (configurable by the admin).</li>
-        <li>Content blends expert knowledge and AI assistance.</li>
-      </ol>
-    </section>
-
-    <section id="contact" class="mt-12">
-      <h3 class="text-2xl font-bold mb-4">Get in touch</h3>
-      <p class="text-gray-700">For partnerships/inquiries: <span class="font-mono">@tradingpro</span></p>
-    </section>
-  </main>
-
-  <footer class="py-8 text-center text-sm text-gray-500">
-    © <span id="year"></span> Trading Education. All rights reserved.
   </footer>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+    
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
   </script>
 </body>
 </html>`;
