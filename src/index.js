@@ -630,7 +630,7 @@ async function generateAIContent(prompt, env, model = 'deepseek/deepseek-chat-v3
   if (env.OLLAMA_API_URL) {
     try {
       console.warn('Attempting Ollama generation...');
-      const ollamaModel = env.OLLAMA_MODEL || 'llama3.2:latest';
+      const ollamaModel = env.OLLAMA_MODEL || 'gpt-oss:20b';
       
       // Retry logic for ngrok connections (can be flaky)
       let lastError;

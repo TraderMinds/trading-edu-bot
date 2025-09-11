@@ -12,7 +12,7 @@ async function testOllamaThroughNgrok() {
         'ngrok-skip-browser-warning': 'true'
       },
       body: JSON.stringify({
-        model: 'llama3.2:latest',
+        model: 'gpt-oss:20b',
         prompt: 'Explain risk management in forex trading in 2 sentences.'
       })
     });
