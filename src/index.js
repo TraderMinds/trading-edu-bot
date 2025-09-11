@@ -471,19 +471,30 @@ function getUnsplashImageUrl(keywords) {
 }
 
 async function postToTelegram(botToken, chatId, caption, imageUrl) {
+  // Validate parameters
+  if (!botToken || !chatId) {
+    throw new Error(`Missing required Telegram parameters: botToken=${!!botToken}, chatId=${!!chatId}`);
+  }
+
+  // Validate bot token format
+  if (!botToken.includes(':') || botToken.length < 40) {
+    throw new Error('Invalid Telegram bot token format');
+  }
+
+  // Validate chat ID format (should be number or string starting with @)
+  if (!chatId.toString().match(/^(-?\d+|@\w+)$/)) {
+    console.warn('Unusual chat ID format:', chatId);
+  }
+
   const endpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendPhoto`;
   
   // Log the request details (excluding sensitive data)
   console.log('Sending to Telegram:', {
     endpoint: endpoint.replace(botToken, '[REDACTED]'),
     captionLength: caption?.length,
-    imageUrl
+    imageUrl: imageUrl?.substring(0, 50) + '...',
+    chatId: chatId
   });
-
-  // Validate parameters
-  if (!botToken || !chatId) {
-    throw new Error('Missing required Telegram parameters');
-  }
 
   // Prepare request body
   const body = {
@@ -493,24 +504,56 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
     parse_mode: 'HTML'
   };
 
+  console.log('Request body prepared:', {
+    chat_id: body.chat_id,
+    photo: body.photo?.substring(0, 50) + '...',
+    captionLength: body.caption.length,
+    parse_mode: body.parse_mode
+  });
+
   try {
     const res = await fetchWithRetry(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'User-Agent': 'TradingBot/1.0'
+      },
       body: JSON.stringify(body)
     });
 
     const txt = await res.text();
+    console.log('Telegram API response status:', res.status);
+    
     if (!res.ok) {
       console.error('Telegram API error response:', {
         status: res.status,
+        statusText: res.statusText,
+        headers: Object.fromEntries(res.headers.entries()),
         response: txt
       });
-      throw new Error(`Telegram API error: ${res.status} ${txt}`);
+      
+      // Parse common Telegram errors
+      let errorMsg = `Telegram API error: ${res.status}`;
+      try {
+        const errorData = JSON.parse(txt);
+        if (errorData.description) {
+          errorMsg += ` - ${errorData.description}`;
+        }
+      } catch (e) {
+        errorMsg += ` - ${txt}`;
+      }
+      
+      throw new Error(errorMsg);
     }
+    
+    console.log('Telegram post successful');
     return txt;
   } catch (error) {
-    console.error('Error posting to Telegram:', error);
+    console.error('Error posting to Telegram:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 }
@@ -547,18 +590,24 @@ async function buildAndSend(env) {
     caption = fallbackText(topic);
   }
 
-  // Keep caption within Telegram limits (4096 characters for photo captions)
-  if (caption.length > 1000) caption = caption.slice(0, 990) + '...';
+  // Add footer to caption if enabled
+  const footer = await getPostFooter(env);
+  if (footer.enabled) {
+    const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading`;
+    caption += footerText;
+  }
+
+  // Keep caption within Telegram limits (1024 characters for photo captions)
+  // Telegram has a 1024 character limit for photo captions, not 4096
+  if (caption.length > 1020) {
+    caption = caption.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>` : '');
+  }
 
   // Compose image query keywords
   const imgUrl = getUnsplashImageUrl([topic, 'trading', 'finance']);
 
-  // Add footer to caption if enabled
-  const footer = await getPostFooter(env);
-  if (footer.enabled) {
-    const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName}</b>\n📱 ${footer.telegramChannel}\n🌐 ${footer.website}\n\n#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading`;
-    caption += footerText;
-  }
+  console.log('Final caption length:', caption.length);
+  console.log('Image URL:', imgUrl);
 
   const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl);
   
@@ -1821,30 +1870,55 @@ export default {
           if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
             console.error('Missing Telegram configuration:', {
               hasToken: !!env.TELEGRAM_BOT_TOKEN,
-              hasChatId: !!env.TELEGRAM_CHAT_ID
+              hasChatId: !!env.TELEGRAM_CHAT_ID,
+              tokenLength: env.TELEGRAM_BOT_TOKEN?.length || 0,
+              chatId: env.TELEGRAM_CHAT_ID
             });
-            return new Response(JSON.stringify({ error: 'Telegram configuration missing' }), {
+            return new Response(JSON.stringify({ 
+              error: 'Telegram configuration missing. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.' 
+            }), {
               status: 500,
               headers: { 'Content-Type': 'application/json' }
             });
           }
 
-          console.log('Posting to Telegram...', {
+          console.log('Manual post attempt...', {
             contentLength: content.length,
             hasToken: !!env.TELEGRAM_BOT_TOKEN,
-            hasChatId: !!env.TELEGRAM_CHAT_ID
+            hasChatId: !!env.TELEGRAM_CHAT_ID,
+            tokenPrefix: env.TELEGRAM_BOT_TOKEN?.substring(0, 10) + '...',
+            chatId: env.TELEGRAM_CHAT_ID
           });
 
+          // Add footer to manual posts too
+          let finalContent = content;
+          const footer = await getPostFooter(env);
+          if (footer.enabled) {
+            const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation`;
+            finalContent += footerText;
+          }
+
+          // Ensure content is within limits
+          if (finalContent.length > 1020) {
+            finalContent = finalContent.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>` : '');
+          }
+
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
-          const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, content, imgUrl);
+          const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl);
           
-          console.log('Telegram API response:', result);
+          console.log('Manual post successful');
+          await updatePostingStats(env, true);
           
           return new Response(JSON.stringify({ success: true, result }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
-          console.error('Post error:', error);
+          console.error('Manual post error:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+          await updatePostingStats(env, false);
           return new Response(JSON.stringify({ 
             error: error.message,
             details: error.stack 
@@ -1960,13 +2034,33 @@ export default {
       // Test post endpoint
       if (path === '/api/test-post' && request.method === 'POST') {
         try {
+          console.log('Test post triggered - checking environment variables...');
+          console.log('Has bot token:', !!env.TELEGRAM_BOT_TOKEN);
+          console.log('Has chat ID:', !!env.TELEGRAM_CHAT_ID);
+          console.log('Has OpenRouter key:', !!env.OPENROUTER_API_KEY);
+          
+          if (!env.TELEGRAM_BOT_TOKEN) {
+            throw new Error('TELEGRAM_BOT_TOKEN is not configured');
+          }
+          if (!env.TELEGRAM_CHAT_ID) {
+            throw new Error('TELEGRAM_CHAT_ID is not configured');
+          }
+          
           const result = await buildAndSend(env);
           return new Response(JSON.stringify({ success: true, result }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
+          console.error('Test post error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
           await updatePostingStats(env, false);
-          return new Response(JSON.stringify({ error: error.message }), {
+          return new Response(JSON.stringify({ 
+            error: error.message,
+            details: error.stack 
+          }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
           });
