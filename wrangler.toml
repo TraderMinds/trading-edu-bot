@@ -8,6 +8,10 @@ workers_dev = true
 [triggers]
 crons = ["0 * * * *"]
 
+[[kv_namespaces]]
+binding = "SUBJECTS_QUEUE"
+id = "c6534dacb0974cdf904226d915f1aca5"
+
 [env.dev]
 name = "trading-edu-bot-worker-dev"
 
