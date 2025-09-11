@@ -2778,7 +2778,7 @@ No errors recorded yet
     if (path === '/test-local' && request.method === 'GET') {
       try {
         // Replace with your actual ngrok URL
-        const NGROK_URL = 'https://5a61ec351821.ngrok-free.app';
+        const NGROK_URL = 'https://28b49b5311b0.ngrok-free.app';
         
         console.warn('Testing connection to local server via ngrok:', NGROK_URL);
         
