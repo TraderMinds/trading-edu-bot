@@ -268,7 +268,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
         � TELEGRAM OPTIMIZATION REQUIREMENTS:
 
         LENGTH & STRUCTURE:
-        • Total length: 800-1000 characters (Telegram caption limit)
+        • Total length: 1800-2800 characters (Telegram caption limit)
         • Use short, punchy sentences (10-15 words max)
         • Break long concepts into digestible chunks
         • Each paragraph max 2-3 lines on mobile
@@ -348,7 +348,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
       },
       { role: 'user', content: prompt }
     ],
-    max_tokens: 1200, // Optimized for Telegram post length
+    max_tokens: 12000, // Optimized for Telegram post length
     temperature: 0.75, // Balanced creativity and consistency
     top_p: 0.85, // Focused coherence for educational content
     frequency_penalty: 0.3, // Reduce repetition significantly
