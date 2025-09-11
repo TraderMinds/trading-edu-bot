@@ -348,7 +348,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
       },
       { role: 'user', content: prompt }
     ],
-    max_tokens: 12000, // Optimized for Telegram post length
+    max_tokens: 3500, // Optimized for Telegram post length (was too high at 12000)
     temperature: 0.75, // Balanced creativity and consistency
     top_p: 0.85, // Focused coherence for educational content
     frequency_penalty: 0.3, // Reduce repetition significantly
@@ -358,6 +358,10 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
   console.log('Making OpenRouter API request with body:', JSON.stringify(body));
   
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -367,8 +371,11 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
         'X-Title': 'Trading Education Bot',
         'X-Model': body.model
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     console.log('OpenRouter API response status:', res.status);
     
@@ -404,8 +411,20 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
     console.error('Unexpected API response shape:', JSON.stringify(json));
     throw new Error('Unexpected response format from OpenRouter API');
   } catch (error) {
-    console.error('OpenRouter API error:', error);
-    throw error;
+    console.error('OpenRouter API error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Handle specific error types
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout: AI generation took too long (>30s)');
+    } else if (error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to AI service');
+    } else {
+      throw new Error(`AI generation failed: ${error.message}`);
+    }
   }
 }
 
@@ -767,14 +786,14 @@ async function buildAndSend(env) {
   // Add footer to caption if enabled
   const footer = await getPostFooter(env);
   if (footer.enabled) {
-    const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading`;
+    const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading\n\n<i>~ Your Trading Mentor</i> ✍️`;
     caption += footerText;
   }
 
   // Keep caption within Telegram limits (1024 characters for photo captions)
   // Telegram has a 1024 character limit for photo captions, not 4096
   if (caption.length > 1020) {
-    caption = caption.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>` : '');
+    caption = caption.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
   }
 
   // Compose image query keywords
@@ -2202,13 +2221,13 @@ Remember: This should be professional-grade content that traders can immediately
           // Add footer to manual posts too
           const footer = await getPostFooter(env);
           if (footer.enabled) {
-            const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation`;
+            const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation\n\n<i>~ Your Trading Mentor</i> ✍️`;
             finalContent += footerText;
           }
 
           // Ensure content is within limits
           if (finalContent.length > 1020) {
-            finalContent = finalContent.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>` : '');
+            finalContent = finalContent.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
           }
 
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
