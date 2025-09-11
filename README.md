@@ -74,4 +74,4 @@ Contributing
 - PRs welcome. Please run npm test and npm run lint before submitting.
 
 License
-- MIT
+- MIT 
