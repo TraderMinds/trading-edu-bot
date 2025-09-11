@@ -27,7 +27,7 @@ Your Worker now has a complete Local Ollama setup interface! Here's how to use i
    - The UI will connect to your local Ollama and list all models
 
    **Step 4: Select Model**
-   - 🧠 Choose from your available models (llama3.2:latest, gpt-oss:20b, etc.)
+   - 🧠 Choose from your available models (llama3.2:latest, gpt-oss:latest, etc.)
    - You'll see model sizes displayed
 
    **Step 5: Save Configuration**

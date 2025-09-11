@@ -19,7 +19,7 @@ Add these environment variables to your Cloudflare Worker:
 # Ollama Configuration
 OLLAMA_API_URL=http://localhost:11434  # Your Ollama server URL
 OLLAMA_API_KEY=your-api-key            # Optional: if auth required
-OLLAMA_MODEL=gpt-oss:20b                  # Optional: default model
+OLLAMA_MODEL=gpt-oss:latest                  # Optional: default model
 ```
 
 ### 🔧 **Ollama Setup Options**
@@ -71,7 +71,7 @@ Common Ollama models for trading content:
 [vars]
 OPENROUTER_API_KEY = "sk-or-your-key"     # Primary
 OLLAMA_API_URL = "http://localhost:11434"  # Fallback
-OLLAMA_MODEL = "gpt-oss:20b"                  # Model choice
+OLLAMA_MODEL = "gpt-oss:latest"                  # Model choice
 ```
 
 #### **Deployment with Ollama**

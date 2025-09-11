@@ -9,7 +9,7 @@ async function testOllama() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-oss:20b',
+        model: 'gpt-oss:latest',
         prompt: 'Hello, how are you today?',
         stream: false
       })

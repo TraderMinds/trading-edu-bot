@@ -37,7 +37,7 @@ async function testLocalOllamaDirectly() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-oss:20b',
+        model: 'gpt-oss:latest',
         prompt: 'Explain risk management in trading in one sentence.',
         stream: false
       })

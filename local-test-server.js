@@ -107,7 +107,7 @@ app.post('/api/generate', async (req, res) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: model || 'gpt-oss:20b',
+        model: model || 'gpt-oss:latest',
         prompt: prompt,
         stream: false,
         options: {
