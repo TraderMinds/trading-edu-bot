@@ -969,7 +969,7 @@ export default {
           <a href="#pricing" class="text-gray-600 hover:text-blue-600 font-medium">Pricing</a>
           <a href="#testimonials" class="text-gray-600 hover:text-blue-600 font-medium">Testimonials</a>
           <a href="#demo" class="text-gray-600 hover:text-blue-600 font-medium">Demo</a>
-          <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">Get Started</a>
+          <a href="https://t.me/AITradingBotProbot" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">Get Started</a>
         </div>
         <button class="md:hidden">
           <i class="fas fa-bars text-gray-600"></i>
@@ -1335,7 +1335,7 @@ export default {
       </div>
 
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="https://t.me/tradingbotpro" class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl font-bold text-lg inline-flex items-center">
+        <a href="https://t.me/AITradingBotProbot" class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-xl font-bold text-lg inline-flex items-center">
           <i class="fab fa-telegram mr-3"></i>
           Contact Sales - Get TradingBot Pro
         </a>
