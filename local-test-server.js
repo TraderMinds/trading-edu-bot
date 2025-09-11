@@ -13,7 +13,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning, User-Agent');
+  
+  // Log incoming requests for debugging
+  // eslint-disable-next-line no-console
+  console.log(`📨 ${req.method} ${req.path} from ${req.get('User-Agent') || 'Unknown'}`);
   
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -41,6 +45,7 @@ app.get('/api/status', (req, res) => {
 });
 
 app.post('/api/data', (req, res) => {
+  // eslint-disable-next-line no-console
   console.log('📨 Received data from Worker:', req.body);
   res.json({
     received: req.body,
@@ -51,6 +56,7 @@ app.post('/api/data', (req, res) => {
 
 // List available Ollama models
 app.get('/api/models', async (req, res) => {
+  // eslint-disable-next-line no-console
   console.log('🤖 Models list requested');
   
   try {
@@ -61,6 +67,7 @@ app.get('/api/models', async (req, res) => {
     }
     
     const data = await ollamaResponse.json();
+    // eslint-disable-next-line no-console
     console.log(`✅ Found ${data.models?.length || 0} local models`);
     
     res.json({
@@ -87,8 +94,9 @@ app.get('/api/models', async (req, res) => {
 
 // Proxy Ollama endpoint for real AI generation
 app.post('/api/generate', async (req, res) => {
-  const { model, prompt, stream = false, options = {} } = req.body;
+  const { model, prompt, options = {} } = req.body;
   
+  // eslint-disable-next-line no-console
   console.log(`🤖 Local AI request - Model: ${model}, Prompt: ${prompt?.substring(0, 50)}...`);
   
   try {
@@ -114,10 +122,12 @@ app.post('/api/generate', async (req, res) => {
     }
     
     const data = await ollamaResponse.json();
+    // eslint-disable-next-line no-console
     console.log(`✅ Ollama generated ${data.response?.length || 0} characters`);
     
     res.json(data);
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Ollama proxy error:', error.message);
     
     // Fallback to simulated response
@@ -132,12 +142,20 @@ app.post('/api/generate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`🌟 Local test server running on http://localhost:${PORT}`);
+  // eslint-disable-next-line no-console
   console.log(`📡 Ready for ngrok tunneling!`);
+  // eslint-disable-next-line no-console
   console.log(`\nEndpoints:`);
+  // eslint-disable-next-line no-console
   console.log(`  GET  /                - Basic status`);
+  // eslint-disable-next-line no-console
   console.log(`  GET  /api/status      - Detailed status`);
+  // eslint-disable-next-line no-console
   console.log(`  GET  /api/models      - List Ollama models`);
+  // eslint-disable-next-line no-console
   console.log(`  POST /api/data        - Accept data from Worker`);
+  // eslint-disable-next-line no-console
   console.log(`  POST /api/generate    - Real Ollama AI generation`);
 });

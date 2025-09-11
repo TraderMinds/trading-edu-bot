@@ -19,5 +19,13 @@
     "no-var": "error",
     "prefer-const": "error",
     "eqeqeq": ["error", "always"]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*test*.js", "*server*.js", "test-*.js"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
 }

@@ -2,7 +2,7 @@
 // Add this to your src/index.js or create a test endpoint
 
 // Worker code to connect to your local server via ngrok
-async function testLocalConnection(request, env) {
+async function testLocalConnection(request, _env) {
   try {
     // Replace with your actual ngrok URL
     const NGROK_URL = 'https://your-ngrok-url.ngrok-free.app';
@@ -58,7 +58,7 @@ async function testLocalConnection(request, env) {
 
 // Add this to your existing router
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env, _ctx) {
     const url = new URL(request.url);
     
     // Test local connection endpoint

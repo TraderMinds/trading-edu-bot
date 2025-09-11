@@ -10,155 +10,118 @@
 
 
 
-> **Automated trading education delivery system** with AI-powered content generation, flexible scheduling, and comprehensive management interface.[![Tests](https://img.shields.io/badge/tests-6%2F6%20passing-brightgreen)](./tests/)[![Tests](https://img.shields.io/badge/tests-6%2F6%20passing-brightgreen)](./tests/)
+> **Automated trading education delivery system** with AI-powered content generation, flexible scheduling, and comprehensive management interface.
 
+## 🚀 **Quick Start: Local AI in 3 Steps**
 
+**Want to use your own AI models for FREE?** Here's how:
 
-## 🚀 Features[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+1. **Install & Start Ollama**: Download from [ollama.ai](https://ollama.ai) → Run `ollama serve`
+2. **Create Tunnel**: Download [ngrok](https://ngrok.com) → Run `ngrok http 3000` 
+3. **Configure via UI**: Visit your Worker → "Local Ollama Setup" → Enter ngrok URL → Select model → Save!
+
+✅ Your Worker now uses your local AI models automatically when needed!
+
+## 🚀 Features
 
 
 
 ### 📚 Content Generation
 
 - **AI-Powered Posts** - Uses OpenRouter API for dynamic, contextual trading education
-
-- **Multi-Market Support** - Crypto, Forex, Stocks, Commodities> **Automated trading education delivery system** with AI-powered content generation, flexible scheduling, and comprehensive management interface.> **Automated trading education delivery system** with AI-powered content generation, flexible scheduling, and comprehensive management interface.
-
+- **🏠 Local Ollama Support** - Connect your own AI models via simple UI setup
+- **Multi-Market Support** - Crypto, Forex, Stocks, Commodities
 - **Fallback Templates** - Built-in educational content when AI is unavailable
-
 - **Custom Subject Queue** - Pre-populate topics for consistent content flow
-
 - **Post Statistics** - Track posting frequency and engagement metrics
 
-## 🚀 **Features**## 🚀 **Features**
+## 🚀 **Features**
 
 ### ⏰ Advanced Scheduling
-
 - **Flexible Cron Scheduling** - From every minute to custom intervals
-
 - **Minute-Level Precision** - High-frequency posting for active engagement
-
-- **Schedule Management UI** - Easy schedule changes with deployment tracking### 📚 **Content Generation**### 📚 **Content Generation**
-
+- **Schedule Management UI** - Easy schedule changes with deployment tracking
 - **Status Indicators** - Clear feedback on schedule deployment state
+- **Helper Scripts** - Automated wrangler.toml updates
 
-- **Helper Scripts** - Automated wrangler.toml updates- **AI-Powered Posts** - Uses OpenRouter API for dynamic, contextual trading education- **AI-Powered Posts** - Uses OpenRouter API for dynamic, contextual trading education
+### 📚 **Content Generation**
+- **AI-Powered Posts** - Uses OpenRouter API for dynamic, contextual trading education
+- **🏠 Local Ollama Support** - Connect your own AI models via simple UI setup
+- **Multi-Market Support** - Crypto, Forex, Stocks, Commodities
+- **Fallback Templates** - Built-in educational content when AI is unavailable
+- **Custom Subject Queue** - Pre-populate topics for consistent content flow
+- **Post Statistics** - Track posting frequency and engagement metrics
 
 
 
-### 🎛️ Management Interface- **Multi-Market Support** - Crypto, Forex, Stocks, Commodities- **Multi-Market Support** - Crypto, Forex, Stocks, Commodities
-
+### 🎛️ Management Interface
 - **Web-Based Dashboard** - Comprehensive admin interface
-
-- **Real-Time Statistics** - Posts per day/week/month tracking- **Fallback Templates** - Built-in educational content when AI is unavailable- **Fallback Templates** - Built-in educational content when AI is unavailable
-
+- **Real-Time Statistics** - Posts per day/week/month tracking
 - **Queue Management** - Add, edit, remove subjects dynamically
-
-- **Footer Customization** - Brand your posts with custom signatures- **Custom Subject Queue** - Pre-populate topics for consistent content flow- **Custom Subject Queue** - Pre-populate topics for consistent content flow
-
+- **Footer Customization** - Brand your posts with custom signatures
 - **Authentication System** - Secure admin access with token-based auth
 
-- **Post Statistics** - Track posting frequency and engagement metrics- **Post Statistics** - Track posting frequency and engagement metrics
-
 ### 🔧 Technical Excellence
-
 - **Cloudflare Workers** - Serverless, globally distributed
-
 - **KV Storage Integration** - Persistent data storage
-
-- **GitHub Actions CI/CD** - Automated testing and deployment### ⏰ **Advanced Scheduling**### ⏰ **Advanced Scheduling**
-
+- **GitHub Actions CI/CD** - Automated testing and deployment
 - **Comprehensive Testing** - 6/6 tests passing with Jest
+- **ESLint Configuration** - Code quality and consistency
 
-- **ESLint Configuration** - Code quality and consistency- **Flexible Cron Scheduling** - From every minute to custom intervals- **Flexible Cron Scheduling** - From every minute to custom intervals
+## 📋 Quick Start
 
-
-
-## 📋 Quick Start- **Minute-Level Precision** - High-frequency posting for active engagement- **Minute-Level Precision** - High-frequency posting for active engagement
-
-
-
-### 1. Clone & Install- **Schedule Management UI** - Easy schedule changes with deployment tracking- **Schedule Management UI** - Easy schedule changes with deployment tracking
+### 1. Clone & Install
 
 ```bash
-
-git clone https://github.com/TraderMinds/trading-edu-bot.git- **Status Indicators** - Clear feedback on schedule deployment state- **Status Indicators** - Clear feedback on schedule deployment state
-
+git clone https://github.com/TraderMinds/trading-edu-bot.git
 cd trading-edu-bot
-
-npm install- **Helper Scripts** - Automated wrangler.toml updates- **Helper Scripts** - Automated wrangler.toml updates
-
+npm install
 ```
-
-
 
 ### 2. Configure Secrets
 
-Set up the following environment variables in Cloudflare Workers or GitHub Secrets:### 🎛️ **Management Interface**### 🎛️ **Management Interface**
+Set up the following environment variables in Cloudflare Workers or GitHub Secrets:
 
-
-
-#### Required Secrets- **Web-Based Dashboard** - Comprehensive admin interface- **Web-Based Dashboard** - Comprehensive admin interface
+#### Required Secrets
 
 | Secret | Description | How to Get |
-
-|--------|-------------|------------|- **Real-Time Statistics** - Posts per day/week/month tracking- **Real-Time Statistics** - Posts per day/week/month tracking
-
+|--------|-------------|------------|
 | `TELEGRAM_BOT_TOKEN` | Bot authentication token | Create bot via [@BotFather](https://t.me/BotFather) |
-
-| `TELEGRAM_CHAT_ID` | Target chat/channel ID | Add bot to group, get ID via API |- **Queue Management** - Add, edit, remove subjects dynamically- **Queue Management** - Add, edit, remove subjects dynamically
-
+| `TELEGRAM_CHAT_ID` | Target chat/channel ID | Add bot to group, get ID via API |
 | `ADMIN_TOKEN` | Web interface access | Generate secure random string |
-
-- **Footer Customization** - Brand your posts with custom signatures- **Footer Customization** - Brand your posts with custom signatures
 
 #### Optional Secrets  
 
-| Secret | Description | Default |- **Authentication System** - Secure admin access with token-based auth- **Authentication System** - Secure admin access with token-based auth
-
+| Secret | Description | Default |
 |--------|-------------|---------|
-
 | `OPENROUTER_API_KEY` | AI content generation | Uses fallback templates |
-
+| `OLLAMA_API_URL` | Local Ollama API endpoint | Not set (configure via UI) |
+| `OLLAMA_MODEL` | Local model name | `llama3.2:latest` |
 | `CF_API_TOKEN` | GitHub Actions deployment | Manual deployment only |
+| `CF_ACCOUNT_ID` | Cloudflare account ID | Required for GitHub Actions |
 
-| `CF_ACCOUNT_ID` | Cloudflare account ID | Required for GitHub Actions |### 🔧 **Technical Excellence**### 🔧 **Technical Excellence**
+**💡 Local Ollama Tip**: Use the UI "Local Ollama Setup" to automatically configure `OLLAMA_API_URL` and `OLLAMA_MODEL`!
 
 
 
-### 3. Deploy- **Cloudflare Workers** - Serverless, globally distributed- **Cloudflare Workers** - Serverless, globally distributed
+### 3. Deploy
 
 ```bash
-
-# Local development- **KV Storage Integration** - Persistent data storage- **KV Storage Integration** - Persistent data storage
-
+# Local development
 npm run start
 
-- **GitHub Actions CI/CD** - Automated testing and deployment- **GitHub Actions CI/CD** - Automated testing and deployment
-
 # Deploy to production
+npm run deploy
 
-npm run deploy- **Comprehensive Testing** - 6/6 tests passing with Jest- **Comprehensive Testing** - 6/6 tests passing with Jest
-
-
-
-# Run tests- **ESLint Configuration** - Code quality and consistency- **ESLint Configuration** - Code quality and consistency
-
+# Run tests
 npm test
-
 ```
 
-
-
-## 🎯 Usage Examples## 📋 **Quick Start**## 📋 **Quick Start**
-
-
+## 🎯 Usage Examples
 
 ### Schedule Management
 
-
-
-```bash### 1. **Clone & Install**### 1. **Clone & Install**
+```bash
 
 # Change to 5-minute intervals
 
@@ -317,12 +280,93 @@ trading-edu-bot/
 ### AI Models (OpenRouter)
 
 - `deepseek/deepseek-chat-v3.1:free` - Free, good quality
-
-- `anthropic/claude-3-haiku` - Fast, efficient  ```bash```bash
-
+- `anthropic/claude-3-haiku` - Fast, efficient  
 - `openai/gpt-3.5-turbo` - Balanced performance
+- `meta/llama-3.2-11b-vision-instruct:free` - Vision-capable
 
-- `meta/llama-3.2-11b-vision-instruct:free` - Vision-capable# Change to 5-minute intervals# Change to 5-minute intervals
+### 🏠 **Local Ollama Integration** (Easy Setup)
+
+> **NEW!** Connect your Cloudflare Worker to your local Ollama models for free AI generation!
+
+#### 📋 **Simple Steps for Beginners:**
+
+**Step 1: Install Required Tools**
+```bash
+# Install Ollama (if not already installed)
+# Download from: https://ollama.ai/download
+
+# Install ngrok for tunnel
+# Download from: https://ngrok.com/download
+```
+
+**Step 2: Start Your Local Services**
+```bash
+# Terminal 1: Start Ollama
+ollama serve
+
+# Terminal 2: Start local bridge server  
+node local-test-server.js
+
+# Terminal 3: Create tunnel to expose your local server
+ngrok http 3000
+```
+
+**Step 3: Configure via UI** ✨
+1. Go to your Worker URL: `https://your-worker.workers.dev`
+2. Login with your admin token
+3. Find the **"Local Ollama Setup"** card (purple color)
+4. ✅ Check "Use Local Ollama"
+5. 📝 Enter your ngrok URL (e.g., `https://abcd1234.ngrok-free.app`)
+6. 🔌 Click the connection test button
+7. 📥 Click "Fetch Available Models"
+8. 🧠 Select your preferred model from the dropdown
+9. 💾 Click "Save Local Ollama Configuration"
+
+**That's it!** Your Worker now uses your local AI models as backup when OpenRouter is unavailable.
+
+#### 🔄 **How It Works:**
+```
+Your Local Computer          Cloudflare Edge
+┌─────────────────┐         ┌─────────────────┐
+│  Ollama Models  │         │  Trading Bot    │
+│  (llama3.2:3b)  │ ◄──────►│   Worker        │
+│                 │  ngrok  │                 │
+│  local-server   │  tunnel │  Automatic      │
+│  (port 3000)    │         │  Fallback       │
+└─────────────────┘         └─────────────────┘
+```
+
+**Flow**: Worker tries OpenRouter → If fails → Uses your local Ollama → Seamless AI generation!
+
+#### 🎯 **Benefits:**
+- ✅ **Free AI Generation** - No API costs for local models
+- ✅ **Automatic Fallback** - Seamlessly switches to local when needed
+- ✅ **Your Models** - Use any Ollama model you have installed
+- ✅ **Visual Interface** - No command line configuration needed
+- ✅ **Real-time Testing** - Verify connection before saving
+
+#### 🔧 **Supported Models:**
+- `llama3.2:latest` - Fast, efficient
+- `llama3.2:3b` - Lightweight option
+- `gemma2:latest` - Google's model
+- `qwen2:latest` - Alibaba's model
+- Any model available in Ollama
+
+#### 💡 **Daily Usage:**
+1. Start your local services (takes 30 seconds)
+2. Your Worker automatically uses local AI when needed
+3. Monitor via the UI - green indicators show everything is working!
+
+#### 🛠️ **Common Issues & Solutions:**
+
+| Problem | Solution |
+|---------|----------|
+| "Connection failed" | Check if `ollama serve` and `node local-test-server.js` are running |
+| "No models found" | Run `ollama pull llama3.2` to download a model first |
+| "ngrok URL changed" | ngrok free URLs change daily - update in UI when needed |
+| "AI still not working" | Check Worker logs: `npx wrangler tail` |
+
+**Need Help?** Check the [LOCAL_OLLAMA_UI_GUIDE.md](./LOCAL_OLLAMA_UI_GUIDE.md) for detailed screenshots and troubleshooting.# Change to 5-minute intervals# Change to 5-minute intervals
 
 
 

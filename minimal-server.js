@@ -7,6 +7,8 @@ app.get('/test', (req, res) => {
 });
 
 app.listen(3001, () => {
+  // eslint-disable-next-line no-console
   console.log('Simple test server running on port 3001');
+  // eslint-disable-next-line no-console
   console.log('Visit: http://localhost:3001/test');
 });

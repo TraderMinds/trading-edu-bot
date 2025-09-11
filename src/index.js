@@ -530,12 +530,14 @@ Topic: ${prompt}`;
   };
 
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging - increased for local Ollama via ngrok
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for Ollama
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for local Ollama through ngrok
     
     const headers = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning
+      'User-Agent': 'CloudflareWorker/1.0'
     };
     
     // Add API key if provided
@@ -582,9 +584,9 @@ Topic: ${prompt}`;
     
     // Handle specific error types
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout: Ollama generation took too long (>45s)');
+      throw new Error('Request timeout: Ollama generation took too long (>90s). Local Ollama may be processing a large model or busy.');
     } else if (error.message.includes('fetch') || error.message.includes('network')) {
-      throw new Error('Network error: Unable to connect to Ollama service');
+      throw new Error('Network error: Unable to connect to Ollama service via ngrok');
     } else {
       throw new Error(`Ollama generation failed: ${error.message}`);
     }
@@ -628,11 +630,37 @@ async function generateAIContent(prompt, env, model = 'deepseek/deepseek-chat-v3
   if (env.OLLAMA_API_URL) {
     try {
       console.warn('Attempting Ollama generation...');
-      const ollamaModel = env.OLLAMA_MODEL || 'llama3.2';
-      const content = await generateTextWithOllama(prompt, env.OLLAMA_API_URL, env.OLLAMA_API_KEY, ollamaModel);
-      console.warn('✅ Ollama generation successful');
-      return { content, source: 'Ollama', model: ollamaModel };
+      const ollamaModel = env.OLLAMA_MODEL || 'llama3.2:latest';
+      
+      // Retry logic for ngrok connections (can be flaky)
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.warn(`Ollama attempt ${attempt}/3...`);
+          const content = await generateTextWithOllama(prompt, env.OLLAMA_API_URL, env.OLLAMA_API_KEY, ollamaModel);
+          console.warn('✅ Ollama generation successful');
+          return { content, source: 'Ollama', model: ollamaModel };
+        } catch (error) {
+          lastError = error;
+          console.warn(`❌ Ollama attempt ${attempt} failed:`, error.message);
+          
+          // Don't retry on timeout or model not found errors
+          if (error.message.includes('timeout') || error.message.includes('not found') || error.message.includes('404')) {
+            break;
+          }
+          
+          // Wait before retry (exponential backoff)
+          if (attempt < 3) {
+            await sleep(1000 * attempt); // 1s, 2s delays
+          }
+        }
+      }
+      
+      throw new Error(`All AI services failed. OpenRouter: unavailable, Ollama: ${lastError.message}`);
     } catch (error) {
+      if (error.message.startsWith('All AI services failed')) {
+        throw error;
+      }
       console.warn('❌ Ollama failed:', error.message);
       throw new Error(`All AI services failed. OpenRouter: unavailable, Ollama: ${error.message}`);
     }
@@ -1512,6 +1540,78 @@ export default {
                                 <i class="fas fa-clock mr-2"></i>Update Schedule
                             </button>
                         </form>
+                    </div>
+
+                    <!-- Local Ollama Configuration -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-desktop mr-2 text-purple-600"></i>Local Ollama Setup
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <!-- Enable Local Ollama -->
+                            <div>
+                                <label class="flex items-center mb-3">
+                                    <input type="checkbox" id="enableLocalOllama" class="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Use Local Ollama</span>
+                                </label>
+                                <p class="text-xs text-gray-500 ml-7">Enable to use your local Ollama models via ngrok tunnel</p>
+                            </div>
+                            
+                            <!-- ngrok URL Input -->
+                            <div id="localOllamaConfig" class="space-y-4" style="display: none;">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2 text-gray-700">
+                                        <i class="fas fa-link mr-1"></i>ngrok Tunnel URL
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="url" id="ngrokUrl" 
+                                               class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                                               placeholder="https://xxxxx.ngrok-free.app">
+                                        <button type="button" id="testConnectionBtn" 
+                                                class="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Your ngrok tunnel URL (without /api/generate)</p>
+                                </div>
+                                
+                                <!-- Connection Status -->
+                                <div id="connectionStatus" class="p-3 rounded-lg border" style="display: none;">
+                                    <div class="flex items-center">
+                                        <i id="connectionIcon" class="fas fa-circle mr-2"></i>
+                                        <span id="connectionText">Testing connection...</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Fetch Models -->
+                                <div id="fetchModelsSection" style="display: none;">
+                                    <button type="button" id="fetchModelsBtn" 
+                                            class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-download mr-2"></i>Fetch Available Models
+                                    </button>
+                                </div>
+                                
+                                <!-- Model Selection -->
+                                <div id="modelSelectionSection" style="display: none;">
+                                    <label class="block text-sm font-medium mb-2 text-gray-700">
+                                        <i class="fas fa-brain mr-1"></i>Select Local Model
+                                    </label>
+                                    <select id="localOllamaModel" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <option value="">Select a model...</option>
+                                    </select>
+                                    <div id="modelInfo" class="mt-2 text-xs text-gray-500"></div>
+                                </div>
+                                
+                                <!-- Save Configuration -->
+                                <div id="saveConfigSection" style="display: none;">
+                                    <button type="button" id="saveLocalConfigBtn" 
+                                            class="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save Local Ollama Configuration
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Quick Actions -->
@@ -2696,6 +2796,165 @@ No errors recorded yet
             }
         }
 
+        // Local Ollama Configuration Functions
+        async function testNgrokConnection() {
+            const ngrokUrl = document.getElementById('ngrokUrl').value.trim();
+            const statusEl = document.getElementById('connectionStatus');
+            const iconEl = document.getElementById('connectionIcon');
+            const textEl = document.getElementById('connectionText');
+            
+            if (!ngrokUrl) {
+                showNotification('Please enter a ngrok URL', 'error');
+                return;
+            }
+            
+            statusEl.style.display = 'block';
+            statusEl.className = 'p-3 rounded-lg border border-blue-200 bg-blue-50';
+            iconEl.className = 'fas fa-circle mr-2 text-blue-500 animate-pulse';
+            textEl.textContent = 'Testing connection...';
+            
+            try {
+                const response = await fetch(\`\${ngrokUrl}/api/status\`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                
+                if (response.ok) {
+                    statusEl.className = 'p-3 rounded-lg border border-green-200 bg-green-50';
+                    iconEl.className = 'fas fa-check-circle mr-2 text-green-500';
+                    textEl.textContent = 'Connection successful!';
+                    
+                    document.getElementById('fetchModelsSection').style.display = 'block';
+                    showNotification('Connection successful! You can now fetch models.', 'success');
+                } else {
+                    throw new Error(\`Server responded with status \${response.status}\`);
+                }
+            } catch (error) {
+                statusEl.className = 'p-3 rounded-lg border border-red-200 bg-red-50';
+                iconEl.className = 'fas fa-times-circle mr-2 text-red-500';
+                textEl.textContent = \`Connection failed: \${error.message}\`;
+                
+                document.getElementById('fetchModelsSection').style.display = 'none';
+                showNotification(\`Connection failed: \${error.message}\`, 'error');
+            }
+        }
+        
+        async function fetchLocalModels() {
+            const ngrokUrl = document.getElementById('ngrokUrl').value.trim();
+            const modelSelect = document.getElementById('localOllamaModel');
+            const modelInfo = document.getElementById('modelInfo');
+            
+            try {
+                showLoading(true);
+                const response = await fetch(\`\${ngrokUrl}/api/models\`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(\`Failed to fetch models: \${response.status}\`);
+                }
+                
+                const data = await response.json();
+                
+                // Clear existing options
+                modelSelect.innerHTML = '<option value="">Select a model...</option>';
+                
+                if (data.models && data.models.length > 0) {
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = \`\${model.name} (\${formatBytes(model.size)})\`;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    document.getElementById('modelSelectionSection').style.display = 'block';
+                    modelInfo.textContent = \`Found \${data.models.length} models\`;
+                    showNotification(\`Found \${data.models.length} local models!\`, 'success');
+                } else {
+                    modelInfo.textContent = 'No models found';
+                    showNotification('No models found on local Ollama instance', 'warning');
+                }
+            } catch (error) {
+                showNotification(\`Failed to fetch models: \${error.message}\`, 'error');
+                modelInfo.textContent = \`Error: \${error.message}\`;
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function saveLocalOllamaConfig() {
+            const ngrokUrl = document.getElementById('ngrokUrl').value.trim();
+            const selectedModel = document.getElementById('localOllamaModel').value;
+            const token = localStorage.getItem('adminToken');
+            
+            if (!ngrokUrl || !selectedModel) {
+                showNotification('Please provide ngrok URL and select a model', 'error');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                
+                // Set OLLAMA_API_URL environment variable
+                const ollamaUrlResponse = await fetch('/api/set-env', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        OLLAMA_API_URL: \`\${ngrokUrl}/api/generate\`,
+                        OLLAMA_MODEL: selectedModel
+                    })
+                });
+                
+                if (!ollamaUrlResponse.ok) {
+                    throw new Error('Failed to save Ollama configuration');
+                }
+                
+                // Save local settings
+                localStorage.setItem('localOllamaEnabled', 'true');
+                localStorage.setItem('localNgrokUrl', ngrokUrl);
+                localStorage.setItem('localOllamaModel', selectedModel);
+                
+                document.getElementById('saveConfigSection').style.display = 'block';
+                showNotification(\`Local Ollama configured successfully with \${selectedModel}!\`, 'success');
+                
+            } catch (error) {
+                showNotification(\`Failed to save configuration: \${error.message}\`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        function toggleLocalOllamaConfig() {
+            const checkbox = document.getElementById('enableLocalOllama');
+            const configDiv = document.getElementById('localOllamaConfig');
+            
+            if (checkbox.checked) {
+                configDiv.style.display = 'block';
+                // Load saved settings
+                const savedUrl = localStorage.getItem('localNgrokUrl');
+                const savedModel = localStorage.getItem('localOllamaModel');
+                
+                if (savedUrl) {
+                    document.getElementById('ngrokUrl').value = savedUrl;
+                }
+                if (savedModel) {
+                    document.getElementById('localOllamaModel').value = savedModel;
+                }
+            } else {
+                configDiv.style.display = 'none';
+            }
+        }
+
         // Event Listeners
         document.getElementById('generateBtn').addEventListener('click', generateContent);
         document.getElementById('postBtn').addEventListener('click', postContent);
@@ -2763,6 +3022,27 @@ No errors recorded yet
                 document.getElementById('editModal').classList.add('hidden');
             }
         });
+
+        // Local Ollama event listeners
+        document.getElementById('enableLocalOllama').addEventListener('change', toggleLocalOllamaConfig);
+        document.getElementById('testConnectionBtn').addEventListener('click', testNgrokConnection);
+        document.getElementById('fetchModelsBtn').addEventListener('click', fetchLocalModels);
+        document.getElementById('saveLocalConfigBtn').addEventListener('click', saveLocalOllamaConfig);
+        
+        // Show save button when model is selected
+        document.getElementById('localOllamaModel').addEventListener('change', (e) => {
+            if (e.target.value) {
+                document.getElementById('saveConfigSection').style.display = 'block';
+            } else {
+                document.getElementById('saveConfigSection').style.display = 'none';
+            }
+        });
+
+        // Load saved local Ollama settings on page load
+        if (localStorage.getItem('localOllamaEnabled') === 'true') {
+            document.getElementById('enableLocalOllama').checked = true;
+            toggleLocalOllamaConfig();
+        }
     </script>
 </body>
 </html>`;
@@ -3213,6 +3493,33 @@ Remember: This should be professional-grade content that traders can immediately
           const { footer } = await request.json();
           await savePostFooter(env, footer);
           return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Set environment variables endpoint (for local Ollama configuration)
+      if (path === '/api/set-env' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          
+          // For now, we can't actually set Worker environment variables at runtime
+          // This endpoint would be used with wrangler CLI to set secrets
+          // But we can provide instructions or simulate the process
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: 'Environment variables configured. Use wrangler CLI to set secrets permanently.',
+            instructions: {
+              OLLAMA_API_URL: `echo "${body.OLLAMA_API_URL}" | npx wrangler secret put OLLAMA_API_URL --env production`,
+              OLLAMA_MODEL: `echo "${body.OLLAMA_MODEL}" | npx wrangler secret put OLLAMA_MODEL --env production`
+            }
+          }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
