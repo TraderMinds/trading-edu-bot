@@ -1,31 +1,24 @@
-// Cloudflare Worker: scheduled hourly to post trading educational content to Telegram
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// Environment vars expected:
-// TELEGRAM_BOT_TOKEN - required
-// TELEGRAM_CHAT_ID - required
-// OPENROUTER_API_KEY - optional (if provided, worker will call OpenRouter for text generation)
-
-const TELEGRAM_API_BASE = 'https://api.telegram.org';
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // ms
-
-// Utility function for delays
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Queue management functions using KV storage
+// src/index.js
+var TELEGRAM_API_BASE = "https://api.telegram.org";
+var MAX_RETRIES = 3;
+var RETRY_DELAY = 1e3;
+var sleep = /* @__PURE__ */ __name((ms) => new Promise((resolve) => setTimeout(resolve, ms)), "sleep");
 async function getSubjectsQueue(env) {
   try {
-    const queue = await env.SUBJECTS_QUEUE?.get('queue');
+    const queue = await env.SUBJECTS_QUEUE?.get("queue");
     return queue ? JSON.parse(queue) : [];
   } catch (error) {
-    console.error('Error getting queue:', error);
+    console.error("Error getting queue:", error);
     return [];
   }
 }
-
+__name(getSubjectsQueue, "getSubjectsQueue");
 async function getPostFooter(env) {
   try {
-    const footer = await env.SUBJECTS_QUEUE?.get('post_footer');
+    const footer = await env.SUBJECTS_QUEUE?.get("post_footer");
     return footer ? JSON.parse(footer) : {
       companyName: "TradingBot Pro",
       telegramChannel: "@tradingpro",
@@ -33,31 +26,31 @@ async function getPostFooter(env) {
       enabled: true
     };
   } catch (error) {
-    console.error('Error getting footer:', error);
+    console.error("Error getting footer:", error);
     return {
       companyName: "TradingBot Pro",
-      telegramChannel: "@tradingpro", 
+      telegramChannel: "@tradingpro",
       website: "tradingbot.com",
       enabled: true
     };
   }
 }
-
+__name(getPostFooter, "getPostFooter");
 async function savePostFooter(env, footerData) {
   try {
     if (env.SUBJECTS_QUEUE) {
-      await env.SUBJECTS_QUEUE.put('post_footer', JSON.stringify(footerData));
+      await env.SUBJECTS_QUEUE.put("post_footer", JSON.stringify(footerData));
     }
     return true;
   } catch (error) {
-    console.error('Error saving footer:', error);
+    console.error("Error saving footer:", error);
     return false;
   }
 }
-
+__name(savePostFooter, "savePostFooter");
 async function getPostingStats(env) {
   try {
-    const stats = await env.SUBJECTS_QUEUE?.get('posting_stats');
+    const stats = await env.SUBJECTS_QUEUE?.get("posting_stats");
     return stats ? JSON.parse(stats) : {
       totalPosts: 0,
       successfulPosts: 0,
@@ -67,7 +60,7 @@ async function getPostingStats(env) {
       postsThisWeek: 0
     };
   } catch (error) {
-    console.error('Error getting stats:', error);
+    console.error("Error getting stats:", error);
     return {
       totalPosts: 0,
       successfulPosts: 0,
@@ -78,804 +71,634 @@ async function getPostingStats(env) {
     };
   }
 }
-
+__name(getPostingStats, "getPostingStats");
 async function updatePostingStats(env, success = true) {
   try {
     const stats = await getPostingStats(env);
-    const now = new Date();
-    
+    const now = /* @__PURE__ */ new Date();
     stats.totalPosts++;
     if (success) {
       stats.successfulPosts++;
     } else {
       stats.failedPosts++;
     }
-    
     stats.lastPostDate = now.toISOString();
-    
-    // Calculate this month and week posts
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
     const lastPostMonth = stats.lastPostDate ? new Date(stats.lastPostDate).getMonth() : -1;
     const lastPostYear = stats.lastPostDate ? new Date(stats.lastPostDate).getFullYear() : -1;
-    
     if (thisMonth !== lastPostMonth || thisYear !== lastPostYear) {
       stats.postsThisMonth = 1;
     } else {
       stats.postsThisMonth++;
     }
-    
-    // Simple week calculation
-    const daysDiff = Math.floor((now - new Date(stats.lastPostDate || 0)) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.floor((now - new Date(stats.lastPostDate || 0)) / (1e3 * 60 * 60 * 24));
     if (daysDiff > 7) {
       stats.postsThisWeek = 1;
     } else {
       stats.postsThisWeek++;
     }
-    
     if (env.SUBJECTS_QUEUE) {
-      await env.SUBJECTS_QUEUE.put('posting_stats', JSON.stringify(stats));
+      await env.SUBJECTS_QUEUE.put("posting_stats", JSON.stringify(stats));
     }
-    
     return stats;
   } catch (error) {
-    console.error('Error updating stats:', error);
+    console.error("Error updating stats:", error);
     return null;
   }
 }
-
+__name(updatePostingStats, "updatePostingStats");
 async function saveSubjectsQueue(env, queue) {
   try {
     if (env.SUBJECTS_QUEUE) {
-      await env.SUBJECTS_QUEUE.put('queue', JSON.stringify(queue));
+      await env.SUBJECTS_QUEUE.put("queue", JSON.stringify(queue));
     }
     return true;
   } catch (error) {
-    console.error('Error saving queue:', error);
+    console.error("Error saving queue:", error);
     return false;
   }
 }
-
-async function addSubjectToQueue(env, subject, market = 'crypto') {
+__name(saveSubjectsQueue, "saveSubjectsQueue");
+async function addSubjectToQueue(env, subject, market = "crypto") {
   const queue = await getSubjectsQueue(env);
   const newItem = {
     id: Date.now().toString(),
     subject: subject.trim(),
     market,
-    addedAt: new Date().toISOString(),
+    addedAt: (/* @__PURE__ */ new Date()).toISOString(),
     processed: false
   };
   queue.push(newItem);
   await saveSubjectsQueue(env, queue);
   return newItem;
 }
-
+__name(addSubjectToQueue, "addSubjectToQueue");
 async function getNextSubject(env) {
   const queue = await getSubjectsQueue(env);
-  return queue.find(item => !item.processed) || null;
+  return queue.find((item) => !item.processed) || null;
 }
-
-async function markSubjectProcessed(env, subjectId) {
-  const queue = await getSubjectsQueue(env);
-  const item = queue.find(q => q.id === subjectId);
-  if (item) {
-    item.processed = true;
-    item.processedAt = new Date().toISOString();
-    await saveSubjectsQueue(env, queue);
-  }
-}
-
+__name(getNextSubject, "getNextSubject");
 async function removeSubjectFromQueue(env, subjectId) {
   const queue = await getSubjectsQueue(env);
-  const filteredQueue = queue.filter(item => item.id !== subjectId);
+  const filteredQueue = queue.filter((item) => item.id !== subjectId);
   await saveSubjectsQueue(env, filteredQueue);
 }
-
-// Structured error logging
-function logError(error, context = {}) {
-  console.error(JSON.stringify({
-    error: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString(),
-    ...context
-  }));
-}
-
+__name(removeSubjectFromQueue, "removeSubjectFromQueue");
 async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, options);
       if (res.ok) return res;
-      
-      // Handle rate limits specially
       if (res.status === 429) {
-        const retryAfter = res.headers.get('Retry-After') || RETRY_DELAY;
-        await sleep(parseInt(retryAfter) * 1000);
+        const retryAfter = res.headers.get("Retry-After") || RETRY_DELAY;
+        await sleep(parseInt(retryAfter) * 1e3);
         continue;
       }
-      
       throw new Error(`HTTP ${res.status}: ${await res.text()}`);
     } catch (err) {
       if (i === retries - 1) throw err;
-      await sleep(RETRY_DELAY * Math.pow(2, i)); // Exponential backoff
+      await sleep(RETRY_DELAY * Math.pow(2, i));
     }
   }
 }
-
-async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-oss-20b:free') {
+__name(fetchWithRetry, "fetchWithRetry");
+async function generateTextWithOpenRouter(prompt, apiKey, model = "openai/gpt-oss-20b:free") {
   if (!apiKey) {
-    throw new Error('OpenRouter API key is required');
+    throw new Error("OpenRouter API key is required");
   }
-
-  const url = 'https://openrouter.ai/api/v1/chat/completions';
-  console.log('Generating content with OpenRouter:', {
+  const url = "https://openrouter.ai/api/v1/chat/completions";
+  console.log("Generating content with OpenRouter:", {
     hasApiKey: !!apiKey,
-    model: model,
+    model,
     promptLength: prompt.length
   });
-
   const body = {
-    model: model,
+    model,
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are an elite trading educator and financial analyst with 20+ years of experience across forex, cryptocurrency, and stock markets. Your mission is to create world-class educational content that transforms beginners into profitable, disciplined traders.
 
-        🎯 TELEGRAM POST STRUCTURE (Follow this EXACT format):
+        \u{1F3AF} TELEGRAM POST STRUCTURE (Follow this EXACT format):
 
-        📱 HEADER SECTION:
-        • Eye-catching title with relevant emojis (max 60 characters)
-        • Quick stats or hook (1-2 lines)
-        • Reading time estimate: ⏱️ 3-4 minutes
+        \u{1F4F1} HEADER SECTION:
+        \u2022 Eye-catching title with relevant emojis (max 60 characters)
+        \u2022 Quick stats or hook (1-2 lines)
+        \u2022 Reading time estimate: \u23F1\uFE0F 3-4 minutes
 
-        🔥 HOOK SECTION:
-        • Start with a compelling problem or surprising fact
-        • Use statistics or real market examples
-        • Create urgency or curiosity in 2-3 lines
+        \u{1F525} HOOK SECTION:
+        \u2022 Start with a compelling problem or surprising fact
+        \u2022 Use statistics or real market examples
+        \u2022 Create urgency or curiosity in 2-3 lines
 
-        📚 MAIN CONTENT (3-4 focused sections):
+        \u{1F4DA} MAIN CONTENT (3-4 focused sections):
         
         SECTION 1: Core Concept
-        • Define the main topic clearly
-        • Explain why it matters (2-3 bullet points)
-        • Include 1 specific example with numbers
+        \u2022 Define the main topic clearly
+        \u2022 Explain why it matters (2-3 bullet points)
+        \u2022 Include 1 specific example with numbers
         
         SECTION 2: Practical Application 
-        • Step-by-step implementation guide
-        • Real trading scenarios with specific setups
-        • Common mistakes to avoid
+        \u2022 Step-by-step implementation guide
+        \u2022 Real trading scenarios with specific setups
+        \u2022 Common mistakes to avoid
         
         SECTION 3: Advanced Tips
-        • Pro-level insights and techniques  
-        • Market psychology elements
-        • Risk management integration
+        \u2022 Pro-level insights and techniques  
+        \u2022 Market psychology elements
+        \u2022 Risk management integration
         
         [OPTIONAL] SECTION 4: Market Context
-        • Current market conditions relevance
-        • Upcoming events or catalysts
-        • Adaptation strategies
+        \u2022 Current market conditions relevance
+        \u2022 Upcoming events or catalysts
+        \u2022 Adaptation strategies
 
-        🎯 ACTION SECTION:
-        • 3-5 immediately actionable steps
-        • Specific tools or resources mentioned
-        • Practice exercises or homework
+        \u{1F3AF} ACTION SECTION:
+        \u2022 3-5 immediately actionable steps
+        \u2022 Specific tools or resources mentioned
+        \u2022 Practice exercises or homework
 
-        📈 CONCLUSION:
-        • Key takeaway in one powerful sentence
-        • Motivation or mindset advice
-        • Call to action or next learning step
+        \u{1F4C8} CONCLUSION:
+        \u2022 Key takeaway in one powerful sentence
+        \u2022 Motivation or mindset advice
+        \u2022 Call to action or next learning step
 
-        � TELEGRAM OPTIMIZATION REQUIREMENTS:
+        \uFFFD TELEGRAM OPTIMIZATION REQUIREMENTS:
 
         LENGTH & STRUCTURE:
-        • Total length: 1800-2800 characters (Telegram caption limit)
-        • Use short, punchy sentences (10-15 words max)
-        • Break long concepts into digestible chunks
-        • Each paragraph max 2-3 lines on mobile
+        \u2022 Total length: 1800-2800 characters (Telegram caption limit)
+        \u2022 Use short, punchy sentences (10-15 words max)
+        \u2022 Break long concepts into digestible chunks
+        \u2022 Each paragraph max 2-3 lines on mobile
 
         FORMATTING RULES:
-        • ONLY use: <b>bold</b>, <i>italic</i>, <u>underline</u>, <code>code</code>
-        • NEVER use: <ul>, <ol>, <li>, <p>, <h1-h6>, <br>, <div>, <span>
-        • Use • for bullet points (never HTML lists)
-        • Use 1., 2., 3. for numbered lists (never HTML)
-        • Section dividers: ━━━━━━━━━━━━━━━━━━━━
+        \u2022 ONLY use: <b>bold</b>, <i>italic</i>, <u>underline</u>, <code>code</code>
+        \u2022 NEVER use: <ul>, <ol>, <li>, <p>, <h1-h6>, <br>, <div>, <span>
+        \u2022 Use \u2022 for bullet points (never HTML lists)
+        \u2022 Use 1., 2., 3. for numbered lists (never HTML)
+        \u2022 Section dividers: \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
 
         VISUAL HIERARCHY:
-        • Main sections: 📊 <b>SECTION NAME</b>
-        • Key concepts: <b>Bold for emphasis</b>
-        • Tips: 💡 <i>Italicized insights</i>
-        • Warnings: ⚠️ <u>Underlined critical points</u>
-        • Code/formulas: <code>Technical terms</code>
+        \u2022 Main sections: \u{1F4CA} <b>SECTION NAME</b>
+        \u2022 Key concepts: <b>Bold for emphasis</b>
+        \u2022 Tips: \u{1F4A1} <i>Italicized insights</i>
+        \u2022 Warnings: \u26A0\uFE0F <u>Underlined critical points</u>
+        \u2022 Code/formulas: <code>Technical terms</code>
 
         ENGAGEMENT ELEMENTS:
-        • Strategic emoji usage (enhance, don't overwhelm)
-        • Questions to reader: "Have you experienced this?"
-        • Direct address: "Your next step is..."
-        • Urgency: "Start this today" / "Don't wait until..."
+        \u2022 Strategic emoji usage (enhance, don't overwhelm)
+        \u2022 Questions to reader: "Have you experienced this?"
+        \u2022 Direct address: "Your next step is..."
+        \u2022 Urgency: "Start this today" / "Don't wait until..."
 
         CONTENT QUALITY STANDARDS:
 
         SPECIFICITY:
-        • Include exact numbers: "Risk 1-2% per trade" not "risk a small amount"
-        • Name specific indicators: "RSI below 30" not "oversold conditions"  
-        • Give precise timeframes: "15-minute chart" not "short timeframe"
-        • Reference actual price levels when relevant
+        \u2022 Include exact numbers: "Risk 1-2% per trade" not "risk a small amount"
+        \u2022 Name specific indicators: "RSI below 30" not "oversold conditions"  
+        \u2022 Give precise timeframes: "15-minute chart" not "short timeframe"
+        \u2022 Reference actual price levels when relevant
 
         ACTIONABILITY:
-        • Every tip must be immediately implementable
-        • Provide exact steps, not vague advice
-        • Include tool recommendations when helpful
-        • Give homework or practice exercises
+        \u2022 Every tip must be immediately implementable
+        \u2022 Provide exact steps, not vague advice
+        \u2022 Include tool recommendations when helpful
+        \u2022 Give homework or practice exercises
 
         EDUCATIONAL DEPTH:
-        • Explain the "why" behind each strategy
-        • Connect concepts to market psychology
-        • Show both theory and real-world application
-        • Address different skill levels appropriately
+        \u2022 Explain the "why" behind each strategy
+        \u2022 Connect concepts to market psychology
+        \u2022 Show both theory and real-world application
+        \u2022 Address different skill levels appropriately
 
         MARKET RELEVANCE:
-        • Reference current market conditions when possible
-        • Mention recent examples or case studies
-        • Connect to trending topics or events
-        • Show adaptability across market cycles
+        \u2022 Reference current market conditions when possible
+        \u2022 Mention recent examples or case studies
+        \u2022 Connect to trending topics or events
+        \u2022 Show adaptability across market cycles
 
-        🧠 EXPERT KNOWLEDGE AREAS:
+        \u{1F9E0} EXPERT KNOWLEDGE AREAS:
 
         TECHNICAL ANALYSIS:
-        • Chart patterns, candlestick analysis, indicator strategies
-        • Multi-timeframe analysis, support/resistance dynamics
-        • Volume analysis, market structure, trend identification
+        \u2022 Chart patterns, candlestick analysis, indicator strategies
+        \u2022 Multi-timeframe analysis, support/resistance dynamics
+        \u2022 Volume analysis, market structure, trend identification
 
         RISK MANAGEMENT:
-        • Position sizing formulas, stop-loss strategies
-        • Portfolio theory, correlation analysis, drawdown management
-        • Kelly criterion, risk-reward optimization
+        \u2022 Position sizing formulas, stop-loss strategies
+        \u2022 Portfolio theory, correlation analysis, drawdown management
+        \u2022 Kelly criterion, risk-reward optimization
 
         TRADING PSYCHOLOGY:
-        • Emotional control, discipline building, bias recognition
-        • Performance psychology, stress management
-        • Habit formation, mindset development
+        \u2022 Emotional control, discipline building, bias recognition
+        \u2022 Performance psychology, stress management
+        \u2022 Habit formation, mindset development
 
         MARKET DYNAMICS:
-        • Order flow, institutional behavior, market microstructure
-        • Economic indicators, central bank policy, global correlations
-        • Volatility patterns, seasonal effects, market cycles
+        \u2022 Order flow, institutional behavior, market microstructure
+        \u2022 Economic indicators, central bank policy, global correlations
+        \u2022 Volatility patterns, seasonal effects, market cycles
 
-        🎯 SUCCESS METRICS:
+        \u{1F3AF} SUCCESS METRICS:
         Your content should make readers think: "This is exactly what I needed to know" and "I can implement this right away."
 
         Focus on transformation, not just information. Build traders who think and act like professionals.`
       },
-      { role: 'user', content: prompt }
+      { role: "user", content: prompt }
     ],
-    max_tokens: 3500, // Optimized for Telegram post length (was too high at 12000)
-    temperature: 0.75, // Balanced creativity and consistency
-    top_p: 0.85, // Focused coherence for educational content
-    frequency_penalty: 0.3, // Reduce repetition significantly
-    presence_penalty: 0.2 // Encourage topic diversity
+    max_tokens: 3500,
+    // Optimized for Telegram post length (was too high at 12000)
+    temperature: 0.75,
+    // Balanced creativity and consistency
+    top_p: 0.85,
+    // Focused coherence for educational content
+    frequency_penalty: 0.3,
+    // Reduce repetition significantly
+    presence_penalty: 0.2
+    // Encourage topic diversity
   };
-
-  console.log('Making OpenRouter API request with body:', JSON.stringify(body));
-  
+  console.log("Making OpenRouter API request with body:", JSON.stringify(body));
   try {
-    // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
+    const timeoutId = setTimeout(() => controller.abort(), 3e4);
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://trading-edu-bot-worker.tradermindai.workers.dev',
-        'X-Title': 'Trading Education Bot',
-        'X-Model': body.model
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://trading-edu-bot-worker.tradermindai.workers.dev",
+        "X-Title": "Trading Education Bot",
+        "X-Model": body.model
       },
       body: JSON.stringify(body),
       signal: controller.signal
     });
-    
     clearTimeout(timeoutId);
-
-    console.log('OpenRouter API response status:', res.status);
-    
+    console.log("OpenRouter API response status:", res.status);
     if (!res.ok) {
       const txt = await res.text();
-      console.error('OpenRouter API error response:', txt);
+      console.error("OpenRouter API error response:", txt);
       throw new Error(`API error (${res.status}): ${txt}`);
     }
-
     const json = await res.json();
-    console.log('OpenRouter API response:', JSON.stringify(json));
-    
-    // Handle OpenRouter response format
+    console.log("OpenRouter API response:", JSON.stringify(json));
     if (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) {
       const content = json.choices[0].message.content.trim();
-      console.log('Generated content length:', content.length);
+      console.log("Generated content length:", content.length);
       return content;
     }
-    
-    // Try alternative response shapes
     if (json.output) {
       const content = String(json.output).trim();
-      console.log('Generated content length (output):', content.length);
+      console.log("Generated content length (output):", content.length);
       return content;
     }
     if (json.text) {
       const content = String(json.text).trim();
-      console.log('Generated content length (text):', content.length);
+      console.log("Generated content length (text):", content.length);
       return content;
     }
-    
-    // If no known response shape matches, log the response and throw error
-    console.error('Unexpected API response shape:', JSON.stringify(json));
-    throw new Error('Unexpected response format from OpenRouter API');
+    console.error("Unexpected API response shape:", JSON.stringify(json));
+    throw new Error("Unexpected response format from OpenRouter API");
   } catch (error) {
-    console.error('OpenRouter API error:', {
+    console.error("OpenRouter API error:", {
       name: error.name,
       message: error.message,
       stack: error.stack
     });
-    
-    // Handle specific error types
-    if (error.name === 'AbortError') {
-      throw new Error('Request timeout: AI generation took too long (>30s)');
-    } else if (error.message.includes('fetch')) {
-      throw new Error('Network error: Unable to connect to AI service');
+    if (error.name === "AbortError") {
+      throw new Error("Request timeout: AI generation took too long (>30s)");
+    } else if (error.message.includes("fetch")) {
+      throw new Error("Network error: Unable to connect to AI service");
     } else {
       throw new Error(`AI generation failed: ${error.message}`);
     }
   }
 }
-
-// Sanitize content for Telegram HTML parsing
+__name(generateTextWithOpenRouter, "generateTextWithOpenRouter");
 function sanitizeForTelegram(content) {
-  if (!content) return '';
-  
-  console.log('Sanitizing content for Telegram, original length:', content.length);
-  
-  // First, let's fix any obvious HTML issues and convert unsupported tags
-  let sanitized = content
-    // Convert <ul> and <ol> lists to bullet points
-    .replace(/<ul[^>]*>/gi, '')
-    .replace(/<\/ul>/gi, '')
-    .replace(/<ol[^>]*>/gi, '')
-    .replace(/<\/ol>/gi, '')
-    .replace(/<li[^>]*>/gi, '• ')
-    .replace(/<\/li>/gi, '\n')
-    
-    // Convert <h1-h6> headers to bold text
-    .replace(/<h[1-6][^>]*>/gi, '\n<b>')
-    .replace(/<\/h[1-6]>/gi, '</b>\n')
-    
-    // Convert <p> tags to line breaks
-    .replace(/<p[^>]*>/gi, '')
-    .replace(/<\/p>/gi, '\n\n')
-    
-    // Convert <br> tags to line breaks
-    .replace(/<br\s*\/?>/gi, '\n')
-    
-    // Convert <strong> to <b>
-    .replace(/<strong[^>]*>/gi, '<b>')
-    .replace(/<\/strong>/gi, '</b>')
-    
-    // Convert <em> to <i>
-    .replace(/<em[^>]*>/gi, '<i>')
-    .replace(/<\/em>/gi, '</i>')
-    
-    // Remove any other unsupported HTML tags while preserving content
-    .replace(/<(?!\/?(b|i|u|s|code|pre|a\s)[^>]*>)[^>]+>/gi, '');
-
-  // Fix unmatched HTML tags for Telegram-supported tags (b, i, u, code)
+  if (!content) return "";
+  console.log("Sanitizing content for Telegram, original length:", content.length);
+  let sanitized = content.replace(/<ul[^>]*>/gi, "").replace(/<\/ul>/gi, "").replace(/<ol[^>]*>/gi, "").replace(/<\/ol>/gi, "").replace(/<li[^>]*>/gi, "\u2022 ").replace(/<\/li>/gi, "\n").replace(/<h[1-6][^>]*>/gi, "\n<b>").replace(/<\/h[1-6]>/gi, "</b>\n").replace(/<p[^>]*>/gi, "").replace(/<\/p>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<strong[^>]*>/gi, "<b>").replace(/<\/strong>/gi, "</b>").replace(/<em[^>]*>/gi, "<i>").replace(/<\/em>/gi, "</i>").replace(/<(?!\/?(b|i|u|s|code|pre|a\s)[^>]*>)[^>]+>/gi, "");
   sanitized = fixUnmatchedTags(sanitized);
-    
-  // Clean up multiple consecutive newlines
-  sanitized = sanitized
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\s*\n\s*/g, '\n')
-    .trim();
-  
-  console.log('Content sanitized for Telegram, new length:', sanitized.length);
-  
-  // Log any remaining potentially problematic tags for debugging
+  sanitized = sanitized.replace(/\n{3,}/g, "\n\n").replace(/\s*\n\s*/g, "\n").trim();
+  console.log("Content sanitized for Telegram, new length:", sanitized.length);
   const remainingTags = sanitized.match(/<[^>]+>/g);
   if (remainingTags) {
-    console.log('Remaining HTML tags after sanitization:', remainingTags);
+    console.log("Remaining HTML tags after sanitization:", remainingTags);
   }
-  
   return sanitized;
 }
-
-// Fix unmatched HTML tags to ensure proper opening/closing pairs
+__name(sanitizeForTelegram, "sanitizeForTelegram");
 function fixUnmatchedTags(content) {
-  // Supported tags in Telegram: b, i, u, code, s, pre, a
-  const supportedTags = ['b', 'i', 'u', 'code', 's'];
-  
+  const supportedTags = ["b", "i", "u", "code", "s"];
   let fixed = content;
-  
-  // For each supported tag, ensure proper matching
-  supportedTags.forEach(tag => {
-    // Count opening and closing tags
-    const openingMatches = fixed.match(new RegExp(`<${tag}\\b[^>]*>`, 'gi')) || [];
-    const closingMatches = fixed.match(new RegExp(`</${tag}>`, 'gi')) || [];
-    
+  supportedTags.forEach((tag) => {
+    const openingMatches = fixed.match(new RegExp(`<${tag}\\b[^>]*>`, "gi")) || [];
+    const closingMatches = fixed.match(new RegExp(`</${tag}>`, "gi")) || [];
     console.log(`Tag ${tag}: ${openingMatches.length} opening, ${closingMatches.length} closing`);
-    
-    // If unmatched, remove the problematic tags
     if (openingMatches.length !== closingMatches.length) {
       console.warn(`Unmatched ${tag} tags detected, removing all ${tag} tags`);
-      // Remove all instances of this tag to prevent parsing errors
-      fixed = fixed
-        .replace(new RegExp(`<${tag}\\b[^>]*>`, 'gi'), '')
-        .replace(new RegExp(`</${tag}>`, 'gi'), '');
+      fixed = fixed.replace(new RegExp(`<${tag}\\b[^>]*>`, "gi"), "").replace(new RegExp(`</${tag}>`, "gi"), "");
     }
   });
-  
   return fixed;
 }
-
-function fallbackText(topic) {
-  // No fallback content - just indicate API is not working
-  return null;
-}
-
+__name(fixUnmatchedTags, "fixUnmatchedTags");
 function getUnsplashImageUrl(keywords) {
-  // Use Unsplash Source to get a relevant free image. No API key required.
-  // Example: https://source.unsplash.com/1600x900/?crypto,finance
-  const q = encodeURIComponent(keywords.join(','));
+  const q = encodeURIComponent(keywords.join(","));
   return `https://source.unsplash.com/1600x900/?${q}`;
 }
-
-// Validate image URL before sending to Telegram
+__name(getUnsplashImageUrl, "getUnsplashImageUrl");
 async function validateImageUrl(imageUrl) {
-  console.log('Validating image URL:', imageUrl);
-  
+  console.log("Validating image URL:", imageUrl);
   try {
-    const response = await fetch(imageUrl, { method: 'HEAD' });
-    const contentType = response.headers.get('content-type');
-    const contentLength = response.headers.get('content-length');
-    
-    console.log('Image validation result:', {
+    const response = await fetch(imageUrl, { method: "HEAD" });
+    const contentType = response.headers.get("content-type");
+    const contentLength = response.headers.get("content-length");
+    console.log("Image validation result:", {
       status: response.status,
       contentType,
       contentLength,
       url: imageUrl
     });
-    
-    // Check if it's actually an image
-    if (!contentType || !contentType.startsWith('image/')) {
-      console.error('URL does not return an image. Content-Type:', contentType);
+    if (!contentType || !contentType.startsWith("image/")) {
+      console.error("URL does not return an image. Content-Type:", contentType);
       return false;
     }
-    
-    // Check if image is too large (Telegram has limits)
-    if (contentLength && parseInt(contentLength) > 20 * 1024 * 1024) { // 20MB limit
-      console.error('Image too large:', contentLength);
+    if (contentLength && parseInt(contentLength) > 20 * 1024 * 1024) {
+      console.error("Image too large:", contentLength);
       return false;
     }
-    
     return true;
   } catch (error) {
-    console.error('Error validating image URL:', error);
+    console.error("Error validating image URL:", error);
     return false;
   }
 }
-
-// Alternative image sources if Unsplash fails
+__name(validateImageUrl, "validateImageUrl");
 function getBackupImageUrl() {
   const backupImages = [
-    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&h=900&fit=crop&crop=center', // Trading chart
-    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&h=900&fit=crop&crop=center', // Financial data
-    'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1600&h=900&fit=crop&crop=center', // Stock market
-    'https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1600&h=900&fit=crop&crop=center', // Charts
-    'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&h=900&fit=crop&crop=center'  // Finance
+    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&h=900&fit=crop&crop=center",
+    // Trading chart
+    "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&h=900&fit=crop&crop=center",
+    // Financial data
+    "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1600&h=900&fit=crop&crop=center",
+    // Stock market
+    "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1600&h=900&fit=crop&crop=center",
+    // Charts
+    "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&h=900&fit=crop&crop=center"
+    // Finance
   ];
-  
   return backupImages[Math.floor(Math.random() * backupImages.length)];
 }
-
+__name(getBackupImageUrl, "getBackupImageUrl");
 async function postToTelegram(botToken, chatId, caption, imageUrl) {
-  // Validate parameters
   if (!botToken || !chatId) {
     throw new Error(`Missing required Telegram parameters: botToken=${!!botToken}, chatId=${!!chatId}`);
   }
-
-  // Validate bot token format
-  if (!botToken.includes(':') || botToken.length < 40) {
-    throw new Error('Invalid Telegram bot token format');
+  if (!botToken.includes(":") || botToken.length < 40) {
+    throw new Error("Invalid Telegram bot token format");
   }
-
-  // Validate chat ID format (should be number or string starting with @)
   if (!chatId.toString().match(/^(-?\d+|@\w+)$/)) {
-    console.warn('Unusual chat ID format:', chatId);
+    console.warn("Unusual chat ID format:", chatId);
   }
-
-  console.log('Starting two-step posting process: image first, then full content as reply');
-
-  // Step 1: Send image with minimal caption
+  console.log("Starting two-step posting process: image first, then full content as reply");
   let imageMessageId;
   try {
-    // Image validation and backup selection
     let finalImageUrl = imageUrl;
     const isValidImage = await validateImageUrl(imageUrl);
     if (!isValidImage) {
-      console.warn('Original image URL failed validation, using backup');
+      console.warn("Original image URL failed validation, using backup");
       finalImageUrl = getBackupImageUrl();
-      
-      // Validate backup image too
       const isBackupValid = await validateImageUrl(finalImageUrl);
       if (!isBackupValid) {
-        console.warn('Backup image also failed, trying another backup');
+        console.warn("Backup image also failed, trying another backup");
         finalImageUrl = getBackupImageUrl();
       }
     }
-    
     const photoEndpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendPhoto`;
-    
-    // Send image with minimal caption
     const imageBody = {
       chat_id: chatId,
       photo: finalImageUrl,
-      caption: '📊 Trading Education', // Minimal caption
-      parse_mode: 'HTML'
+      caption: "\u{1F4CA} Trading Education",
+      // Minimal caption
+      parse_mode: "HTML"
     };
-
-    console.log('Sending image:', {
-      endpoint: photoEndpoint.replace(botToken, '[REDACTED]'),
-      finalImageUrl: finalImageUrl?.substring(0, 50) + '...',
-      chatId: chatId
+    console.log("Sending image:", {
+      endpoint: photoEndpoint.replace(botToken, "[REDACTED]"),
+      finalImageUrl: finalImageUrl?.substring(0, 50) + "...",
+      chatId
     });
-
     const imageRes = await fetchWithRetry(photoEndpoint, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'User-Agent': 'TradingBot/1.0'
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "TradingBot/1.0"
       },
       body: JSON.stringify(imageBody)
     });
-
     const imageResText = await imageRes.text();
-    
     if (!imageRes.ok) {
-      console.error('Image posting failed:', imageResText);
+      console.error("Image posting failed:", imageResText);
       throw new Error(`Image posting failed: ${imageRes.status} - ${imageResText}`);
     }
-
-    // Parse response to get message ID
     const imageResponseData = JSON.parse(imageResText);
     imageMessageId = imageResponseData.result.message_id;
-    console.log('Image posted successfully, message ID:', imageMessageId);
-
+    console.log("Image posted successfully, message ID:", imageMessageId);
   } catch (imageError) {
-    console.error('Image posting failed, falling back to text-only:', imageError.message);
-    
-    // If image fails, send full content as regular message
+    console.error("Image posting failed, falling back to text-only:", imageError.message);
     try {
       const textEndpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`;
       const textOnlyBody = {
         chat_id: chatId,
-        text: caption || 'Trading Education Content',
-        parse_mode: 'HTML'
+        text: caption || "Trading Education Content",
+        parse_mode: "HTML"
       };
-      
       const textRes = await fetchWithRetry(textEndpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'User-Agent': 'TradingBot/1.0'
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "TradingBot/1.0"
         },
         body: JSON.stringify(textOnlyBody)
       });
-      
       const textResText = await textRes.text();
       if (textRes.ok) {
-        console.log('Text-only fallback successful');
+        console.log("Text-only fallback successful");
         return textResText;
       } else {
         throw new Error(`Text fallback also failed: ${textRes.status} - ${textResText}`);
       }
     } catch (textError) {
-      console.error('All posting methods failed:', textError.message);
+      console.error("All posting methods failed:", textError.message);
       throw new Error(`Complete posting failure: ${imageError.message}, ${textError.message}`);
     }
   }
-
-  // Step 2: Send full educational content as reply to the image
   try {
     const messageEndpoint = `${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`;
-    
     const replyBody = {
       chat_id: chatId,
-      text: caption || 'Trading Education Content',
-      parse_mode: 'HTML',
+      text: caption || "Trading Education Content",
+      parse_mode: "HTML",
       reply_to_message_id: imageMessageId
     };
-
-    console.log('Sending full content as reply:', {
-      endpoint: messageEndpoint.replace(botToken, '[REDACTED]'),
+    console.log("Sending full content as reply:", {
+      endpoint: messageEndpoint.replace(botToken, "[REDACTED]"),
       contentLength: caption?.length,
       replyToMessageId: imageMessageId
     });
-
     const replyRes = await fetchWithRetry(messageEndpoint, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'User-Agent': 'TradingBot/1.0'
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "TradingBot/1.0"
       },
       body: JSON.stringify(replyBody)
     });
-
     const replyResText = await replyRes.text();
-    
     if (!replyRes.ok) {
-      console.error('Reply message failed:', replyResText);
-      
-      // Try sending without HTML if parsing fails
-      console.log('Attempting reply without HTML formatting');
+      console.error("Reply message failed:", replyResText);
+      console.log("Attempting reply without HTML formatting");
       const plainTextBody = {
         chat_id: chatId,
-        text: caption.replace(/<[^>]*>/g, '') || 'Trading Education Content',
+        text: caption.replace(/<[^>]*>/g, "") || "Trading Education Content",
         reply_to_message_id: imageMessageId
       };
-      
       const plainRes = await fetchWithRetry(messageEndpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'User-Agent': 'TradingBot/1.0'
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "TradingBot/1.0"
         },
         body: JSON.stringify(plainTextBody)
       });
-      
       const plainResText = await plainRes.text();
       if (plainRes.ok) {
-        console.log('Plain text reply successful');
+        console.log("Plain text reply successful");
         return plainResText;
       } else {
         throw new Error(`Reply failed with HTML and plain text: ${replyResText}, ${plainResText}`);
       }
     }
-
-    console.log('Two-step posting completed successfully');
+    console.log("Two-step posting completed successfully");
     return replyResText;
-
   } catch (replyError) {
-    console.error('Reply message failed:', replyError.message);
-    console.log('Image was posted successfully, but reply failed');
-    // Return success since image was posted, even if reply failed
+    console.error("Reply message failed:", replyError.message);
+    console.log("Image was posted successfully, but reply failed");
     return `Image posted successfully (ID: ${imageMessageId}), but reply failed: ${replyError.message}`;
   }
 }
-
+__name(postToTelegram, "postToTelegram");
 async function buildAndSend(env) {
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const chatId = env.TELEGRAM_CHAT_ID;
-  if (!botToken || !chatId) throw new Error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
-
-  // Check if there's a subject in the queue
+  if (!botToken || !chatId) throw new Error("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID");
   const nextSubject = await getNextSubject(env);
-  
   let topic, prompt;
   if (nextSubject) {
-    console.log('Processing queued subject:', nextSubject);
+    console.log("Processing queued subject:", nextSubject);
     topic = nextSubject.market;
     prompt = `Create an extensive, comprehensive educational guide about "${nextSubject.subject}" for ${nextSubject.market} traders. 
 
 Include the following in your response:
-📚 **Introduction & Definition**: Clear explanation of the concept
-📖 **How it Works**: Step-by-step breakdown of the process
-💡 **Key Strategies**: 3-4 practical strategies traders can use
-⚠️ **Risk Management**: Important risks and how to mitigate them
-📈 **Real-World Examples**: Concrete examples of application
-🎯 **Action Steps**: What traders should do next
-💪 **Pro Tips**: Advanced insights for better results
+\u{1F4DA} **Introduction & Definition**: Clear explanation of the concept
+\u{1F4D6} **How it Works**: Step-by-step breakdown of the process
+\u{1F4A1} **Key Strategies**: 3-4 practical strategies traders can use
+\u26A0\uFE0F **Risk Management**: Important risks and how to mitigate them
+\u{1F4C8} **Real-World Examples**: Concrete examples of application
+\u{1F3AF} **Action Steps**: What traders should do next
+\u{1F4AA} **Pro Tips**: Advanced insights for better results
 
 Format with HTML tags for Telegram (use <b></b> for bold, <i></i> for italics).
 Aim for 2000-3000 characters to provide comprehensive educational value.
 Make it detailed, informative, and highly actionable for serious traders.`;
   } else {
-    // Fallback to random topics if queue is empty
-    topic = ['crypto', 'forex'][Math.floor(Math.random() * 2)];
+    topic = ["crypto", "forex"][Math.floor(Math.random() * 2)];
     prompt = `Write an extensive educational trading guide for ${topic} traders. 
 
 Include the following sections:
-📚 **Topic Overview**: Pick an important trading concept and explain it clearly
-📖 **Core Principles**: How the concept works in practice
-💡 **Trading Strategies**: 3-4 actionable strategies
-⚠️ **Risk Management**: Key risks and mitigation techniques
-📈 **Market Examples**: Real scenarios where this applies
-🎯 **Implementation**: Step-by-step action plan
-💪 **Advanced Tips**: Pro-level insights
+\u{1F4DA} **Topic Overview**: Pick an important trading concept and explain it clearly
+\u{1F4D6} **Core Principles**: How the concept works in practice
+\u{1F4A1} **Trading Strategies**: 3-4 actionable strategies
+\u26A0\uFE0F **Risk Management**: Key risks and mitigation techniques
+\u{1F4C8} **Market Examples**: Real scenarios where this applies
+\u{1F3AF} **Implementation**: Step-by-step action plan
+\u{1F4AA} **Advanced Tips**: Pro-level insights
 
 Format with HTML tags for Telegram (use <b></b> for bold, <i></i> for italics).
 Aim for 2000-3000 characters to provide comprehensive educational value.
 Keep it highly actionable and professional for serious traders.`;
   }
-
-  let caption = '';
+  let caption = "";
   if (env.OPENROUTER_API_KEY) {
     try {
-      // Use a balanced model for scheduled posts
-      const scheduledModel = 'deepseek/deepseek-chat-v3.1:free';
+      const scheduledModel = "deepseek/deepseek-chat-v3.1:free";
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
     } catch (err) {
-      // AI call failed - don't send anything
-      console.error('OpenRouter call failed:', err.message);
-      console.log('No fallback content available - skipping post');
+      console.error("OpenRouter call failed:", err.message);
+      console.log("No fallback content available - skipping post");
       throw new Error(`AI API not working: ${err.message}`);
     }
   } else {
-    // No API key - don't send anything
-    console.error('No OpenRouter API key configured');
-    console.log('No API key available - skipping post');
-    throw new Error('OpenRouter API key not configured');
+    console.error("No OpenRouter API key configured");
+    console.log("No API key available - skipping post");
+    throw new Error("OpenRouter API key not configured");
   }
-
-  // Sanitize caption for Telegram
   caption = sanitizeForTelegram(caption);
-
-  // Add footer to caption if enabled
   const footer = await getPostFooter(env);
   if (footer.enabled) {
-    const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading\n\n<i>~ Your Trading Mentor</i> ✍️`;
+    const footerText = `
+
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+\u{1F4C8} <b>${footer.companyName || "TradingBot Pro"}</b>
+\u{1F4F1} ${footer.telegramChannel || "@tradingbot"}
+\u{1F310} ${footer.website || "tradingbot.com"}
+
+#TradingEducation #${topic.charAt(0).toUpperCase() + topic.slice(1)}Trading
+
+<i>~ Your Trading Mentor</i> \u270D\uFE0F`;
     caption += footerText;
   }
+  if (caption.length > 4e3) {
+    caption = caption.slice(0, 3900) + "...\n\n" + (footer.enabled ? `\u{1F4C8} <b>${footer.companyName || "TradingBot Pro"}</b>
 
-  // Keep content within Telegram message limits (4096 characters for regular messages)
-  // Since we're sending as a reply message, we can use the full 4096 character limit
-  if (caption.length > 4000) {
-    caption = caption.slice(0, 3900) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
+<i>~ Your Trading Mentor</i> \u270D\uFE0F` : "");
   }
-
-  // Compose image query keywords
-  const imgUrl = getUnsplashImageUrl([topic, 'trading', 'finance']);
-
-  console.log('Final caption length:', caption.length);
-  console.log('Image URL:', imgUrl);
-
+  const imgUrl = getUnsplashImageUrl([topic, "trading", "finance"]);
+  console.log("Final caption length:", caption.length);
+  console.log("Image URL:", imgUrl);
   const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl);
-  
-  // Update posting statistics
   await updatePostingStats(env, true);
-  
-  // Mark subject as processed and remove from queue if it was from queue
   if (nextSubject) {
     await removeSubjectFromQueue(env, nextSubject.id);
-    console.log('Subject processed and removed from queue:', nextSubject.subject);
+    console.log("Subject processed and removed from queue:", nextSubject.subject);
   }
-  
   return sendResult;
 }
-
-export default {
+__name(buildAndSend, "buildAndSend");
+var index_default = {
   async scheduled(event, env, ctx) {
-    // Use waitUntil so the scheduled event can finish asynchronously
     ctx.waitUntil((async () => {
       try {
         const res = await buildAndSend(env);
-        console.log('Posted to Telegram:', res);
+        console.log("Posted to Telegram:", res);
       } catch (err) {
-        console.error('Error in scheduled job:', err);
+        console.error("Error in scheduled job:", err);
       }
     })());
   },
-
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
-
-    // Serve UI files
-    if (path === '/' || path === '/index.html') {
-      // Serve the UI content directly
+    if (path === "/" || path === "/index.html") {
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Education Bot Control Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"><\/script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .loading { display: none; }
@@ -1031,8 +854,8 @@ export default {
                                     <input type="text" id="newSubject" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                                            placeholder="Enter subject for future post (e.g., Technical Analysis Basics)">
                                     <select id="newSubjectMarket" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <option value="crypto">📈 Crypto</option>
-                                        <option value="forex">💱 Forex</option>
+                                        <option value="crypto">\u{1F4C8} Crypto</option>
+                                        <option value="forex">\u{1F4B1} Forex</option>
                                     </select>
                                 </div>
                                 <div class="flex space-x-2">
@@ -1088,8 +911,8 @@ export default {
                                         <i class="fas fa-chart-line mr-1"></i>Market Type
                                     </label>
                                     <select id="market" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
-                                        <option value="crypto">📈 Cryptocurrency</option>
-                                        <option value="forex">💱 Forex</option>
+                                        <option value="crypto">\u{1F4C8} Cryptocurrency</option>
+                                        <option value="forex">\u{1F4B1} Forex</option>
                                     </select>
                                 </div>
                             </div>
@@ -1099,20 +922,20 @@ export default {
                                     <i class="fas fa-brain mr-1"></i>AI Model
                                 </label>
                                 <select id="model" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
-                                    <optgroup label="🆓 Free Models">
-                                        <option value="openai/gpt-oss-120b:free">⚡ GPT OSS 120B - Most Powerful</option>
-                                        <option value="deepseek/deepseek-chat-v3.1:free">🧠 DeepSeek V3.1 - Advanced Reasoning</option>
-                                        <option value="nvidia/nemotron-nano-9b-v2:free">🔥 NVIDIA Nemotron Nano 9B V2 - Latest</option>
-                                        <option value="openai/gpt-oss-20b:free" selected>🚀 GPT OSS 20B - Fast & Reliable</option>
-                                        <option value="z-ai/glm-4.5-air:free">💨 GLM 4.5 Air - Efficient</option>
-                                        <option value="qwen/qwen3-coder:free">💻 Qwen3 Coder - Code-Optimized</option>
+                                    <optgroup label="\u{1F193} Free Models">
+                                        <option value="openai/gpt-oss-120b:free">\u26A1 GPT OSS 120B - Most Powerful</option>
+                                        <option value="deepseek/deepseek-chat-v3.1:free">\u{1F9E0} DeepSeek V3.1 - Advanced Reasoning</option>
+                                        <option value="nvidia/nemotron-nano-9b-v2:free">\u{1F525} NVIDIA Nemotron Nano 9B V2 - Latest</option>
+                                        <option value="openai/gpt-oss-20b:free" selected>\u{1F680} GPT OSS 20B - Fast & Reliable</option>
+                                        <option value="z-ai/glm-4.5-air:free">\u{1F4A8} GLM 4.5 Air - Efficient</option>
+                                        <option value="qwen/qwen3-coder:free">\u{1F4BB} Qwen3 Coder - Code-Optimized</option>
                                     </optgroup>
-                                    <optgroup label="🌟 Premium Models">
-                                        <option value="openrouter/sonoma-sky-alpha">☁️ Sonoma Sky Alpha - Creative</option>
-                                        <option value="openrouter/sonoma-dusk-alpha">🌅 Sonoma Dusk Alpha - Balanced</option>
+                                    <optgroup label="\u{1F31F} Premium Models">
+                                        <option value="openrouter/sonoma-sky-alpha">\u2601\uFE0F Sonoma Sky Alpha - Creative</option>
+                                        <option value="openrouter/sonoma-dusk-alpha">\u{1F305} Sonoma Dusk Alpha - Balanced</option>
                                     </optgroup>
                                 </select>
-                                <p class="text-xs text-gray-500 mt-1">💡 Free models have usage limits. Premium models require credits.</p>
+                                <p class="text-xs text-gray-500 mt-1">\u{1F4A1} Free models have usage limits. Premium models require credits.</p>
                             </div>
 
                             <!-- Progress Bar -->
@@ -1220,13 +1043,13 @@ export default {
                                     <i class="fas fa-calendar-alt mr-1"></i>Posting Schedule
                                 </label>
                                 <select id="schedule" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                                    <option value="0 * * * *">⚡ Every hour</option>
-                                    <option value="0 */2 * * *">🕐 Every 2 hours</option>
-                                    <option value="0 */4 * * *">🕓 Every 4 hours</option>
-                                    <option value="0 */6 * * *">🕕 Every 6 hours</option>
-                                    <option value="0 */12 * * *">🌓 Every 12 hours</option>
-                                    <option value="0 0 * * *">🌅 Once per day</option>
-                                    <option value="0 0 * * 1">📅 Weekly (Monday)</option>
+                                    <option value="0 * * * *">\u26A1 Every hour</option>
+                                    <option value="0 */2 * * *">\u{1F550} Every 2 hours</option>
+                                    <option value="0 */4 * * *">\u{1F553} Every 4 hours</option>
+                                    <option value="0 */6 * * *">\u{1F555} Every 6 hours</option>
+                                    <option value="0 */12 * * *">\u{1F313} Every 12 hours</option>
+                                    <option value="0 0 * * *">\u{1F305} Once per day</option>
+                                    <option value="0 0 * * 1">\u{1F4C5} Weekly (Monday)</option>
                                 </select>
                             </div>
 
@@ -1566,7 +1389,7 @@ No errors recorded yet
 
                 if (!response.ok) throw new Error('Posting failed');
 
-                showNotification('Posted successfully to Telegram! 🎉', 'success');
+                showNotification('Posted successfully to Telegram! \u{1F389}', 'success');
                 generatedContent = '';
                 document.getElementById('preview-section').classList.add('hidden');
                 
@@ -1618,10 +1441,10 @@ No errors recorded yet
                 return;
             }
 
-            const footerText = \`━━━━━━━━━━━━━━━━━━━━
-📈 \${companyName || 'Company Name'}
-📱 \${telegramChannel || '@channel'}
-🌐 \${website || 'website.com'}
+            const footerText = \`\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+\u{1F4C8} \${companyName || 'Company Name'}
+\u{1F4F1} \${telegramChannel || '@channel'}
+\u{1F310} \${website || 'website.com'}
 
 #TradingEducation #CryptoTrading\`;
             
@@ -1895,11 +1718,14 @@ No errors recorded yet
                 if (!response.ok) {
                     // Store the error for debugging
                     document.getElementById('lastError').textContent = 
-                        \`Status: \${response.status}\nError: \${data.error}\nDetails: \${data.details || 'No additional details'}\nTimestamp: \${data.timestamp || new Date().toISOString()}\`;
+                        \`Status: \${response.status}
+Error: \${data.error}
+Details: \${data.details || 'No additional details'}
+Timestamp: \${data.timestamp || new Date().toISOString()}\`;
                     throw new Error(data.error || 'Test post failed');
                 }
                 
-                showNotification('Test post sent successfully! 🚀', 'success');
+                showNotification('Test post sent successfully! \u{1F680}', 'success');
                 await loadStats();
             } catch (error) {
                 console.error('Test post error:', error);
@@ -1936,21 +1762,21 @@ No errors recorded yet
                     <div class="flex justify-between">
                         <span>TELEGRAM_BOT_TOKEN:</span> 
                         <span class="\${data.environment.hasBotToken ? 'text-green-600' : 'text-red-600'}">
-                            \${data.environment.hasBotToken ? '✓ Set' : '✗ Missing'}
+                            \${data.environment.hasBotToken ? '\u2713 Set' : '\u2717 Missing'}
                             \${data.environment.hasBotToken ? \` (\${data.environment.botTokenLength} chars, \${data.environment.botTokenFormat})\` : ''}
                         </span>
                     </div>
                     <div class="flex justify-between">
                         <span>TELEGRAM_CHAT_ID:</span> 
                         <span class="\${data.environment.hasChatId ? 'text-green-600' : 'text-red-600'}">
-                            \${data.environment.hasChatId ? '✓ Set' : '✗ Missing'}
+                            \${data.environment.hasChatId ? '\u2713 Set' : '\u2717 Missing'}
                             \${data.environment.hasChatId ? \` (\${data.environment.chatId}, \${data.environment.chatIdType})\` : ''}
                         </span>
                     </div>
                     <div class="flex justify-between">
                         <span>OPENROUTER_API_KEY:</span> 
                         <span class="\${data.environment.hasOpenRouterKey ? 'text-green-600' : 'text-yellow-600'}">
-                            \${data.environment.hasOpenRouterKey ? '✓ Set' : '⚠ Missing (Optional)'}
+                            \${data.environment.hasOpenRouterKey ? '\u2713 Set' : '\u26A0 Missing (Optional)'}
                             \${data.environment.hasOpenRouterKey ? \` (\${data.environment.openRouterKeyLength} chars)\` : ''}
                         </span>
                     </div>
@@ -1958,7 +1784,7 @@ No errors recorded yet
                         <div class="flex justify-between">
                             <span>Configuration Status:</span> 
                             <span class="\${data.validation.configurationComplete ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}">
-                                \${data.validation.configurationComplete ? '✓ READY' : '✗ INCOMPLETE'}
+                                \${data.validation.configurationComplete ? '\u2713 READY' : '\u2717 INCOMPLETE'}
                             </span>
                         </div>
                     </div>
@@ -2097,52 +1923,45 @@ No errors recorded yet
                 document.getElementById('bulkModal').classList.add('hidden');
             }
         });
-    </script>
+    <\/script>
 </body>
 </html>`;
-      return new Response(html, { 
-        headers: { 
-          'Content-Type': 'text/html',
-          'Cache-Control': 'public, max-age=3600'
-        } 
+      return new Response(html, {
+        headers: {
+          "Content-Type": "text/html",
+          "Cache-Control": "public, max-age=3600"
+        }
       });
     }
-
-    // API Endpoints
-    if (path.startsWith('/api/')) {
-      // Check admin token for all API endpoints
-      const adminToken = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (path.startsWith("/api/")) {
+      const adminToken = request.headers.get("Authorization")?.replace("Bearer ", "");
       if (!adminToken || adminToken !== env.ADMIN_TOKEN) {
-        return new Response('Unauthorized', { status: 401 });
+        return new Response("Unauthorized", { status: 401 });
       }
-
-      if (path === '/api/generate' && request.method === 'POST') {
+      if (path === "/api/generate" && request.method === "POST") {
         try {
-          // Validate request body
           const { subject, market, model } = await request.json();
           if (!subject || !market || !model) {
-            return new Response(JSON.stringify({ error: 'Missing required fields: subject, market, and model are required' }), {
+            return new Response(JSON.stringify({ error: "Missing required fields: subject, market, and model are required" }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-
-          // Generate comprehensive prompt based on subject and market
           const prompt = `Create an expert-level educational guide about "${subject}" specifically for ${market} trading.
 
-🎯 TOPIC FOCUS: ${subject}
-💹 MARKET: ${market.charAt(0).toUpperCase() + market.slice(1)}
-📊 TARGET AUDIENCE: Intermediate to advanced traders seeking actionable insights
+\u{1F3AF} TOPIC FOCUS: ${subject}
+\u{1F4B9} MARKET: ${market.charAt(0).toUpperCase() + market.slice(1)}
+\u{1F4CA} TARGET AUDIENCE: Intermediate to advanced traders seeking actionable insights
 
-📝 CONTENT REQUIREMENTS:
-• Provide deep, actionable insights about ${subject}
-• Include ${market}-specific examples and scenarios
-• Cover both theoretical concepts and practical implementation
-• Address common pitfalls and how to avoid them
-• Include specific metrics, timeframes, and risk parameters
-• Reference current market dynamics where relevant
+\u{1F4DD} CONTENT REQUIREMENTS:
+\u2022 Provide deep, actionable insights about ${subject}
+\u2022 Include ${market}-specific examples and scenarios
+\u2022 Cover both theoretical concepts and practical implementation
+\u2022 Address common pitfalls and how to avoid them
+\u2022 Include specific metrics, timeframes, and risk parameters
+\u2022 Reference current market dynamics where relevant
 
-🎨 STRUCTURE GUIDELINES:
+\u{1F3A8} STRUCTURE GUIDELINES:
 1. Compelling title with problem/solution angle
 2. Quick value proposition (why this matters now)
 3. Core concept breakdown with examples
@@ -2152,7 +1971,7 @@ No errors recorded yet
 7. Advanced tips from professional perspective
 8. Actionable next steps
 
-💡 MAKE IT PRACTICAL:
+\u{1F4A1} MAKE IT PRACTICAL:
 - Include specific numbers and percentages
 - Provide exact timeframes and conditions
 - Give real trading scenarios
@@ -2160,347 +1979,301 @@ No errors recorded yet
 - Address psychological aspects of implementing ${subject}
 
 Remember: This should be professional-grade content that traders can immediately apply to improve their ${market} trading results.`;
-
-          let content = '';
+          let content = "";
           if (env.OPENROUTER_API_KEY) {
             try {
               content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model);
               if (!content) {
-                throw new Error('No content generated');
+                throw new Error("No content generated");
               }
-              
-              // Additional formatting for Telegram
-              content = content
-                .replace(/\n\s*\n/g, '\n\n') // Standardize spacing
-                .replace(/•/g, '•') // Standardize bullet points
-                .replace(/---/g, '\n━━━━━━━━━━\n') // Nice dividers
-                .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
-                .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
-                .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
-              
-              // Sanitize for Telegram HTML parsing
+              content = content.replace(/\n\s*\n/g, "\n\n").replace(/•/g, "\u2022").replace(/---/g, "\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n").replace(/\*(.*?)\*/g, "<b>$1</b>").replace(/_(.*?)_/g, "<i>$1</i>").replace(/~(.*?)~/g, "<u>$1</u>");
               content = sanitizeForTelegram(content);
             } catch (aiError) {
-              console.error('AI generation error:', aiError);
-              // No fallback - return error
-              return new Response(JSON.stringify({ 
-                error: 'AI API not working: ' + (aiError.message || 'Unknown error')
+              console.error("AI generation error:", aiError);
+              return new Response(JSON.stringify({
+                error: "AI API not working: " + (aiError.message || "Unknown error")
               }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { "Content-Type": "application/json" }
               });
             }
           } else {
-            // No API key - return error
-            return new Response(JSON.stringify({ 
-              error: 'OpenRouter API key not configured' 
+            return new Response(JSON.stringify({
+              error: "OpenRouter API key not configured"
             }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-
           return new Response(JSON.stringify({ content }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
-          console.error('Generation error:', error);
-          return new Response(JSON.stringify({ 
-            error: 'Failed to generate content: ' + (error.message || 'Unknown error') 
+          console.error("Generation error:", error);
+          return new Response(JSON.stringify({
+            error: "Failed to generate content: " + (error.message || "Unknown error")
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      if (path === '/api/post' && request.method === 'POST') {
+      if (path === "/api/post" && request.method === "POST") {
         try {
           const { content } = await request.json();
           if (!content) {
-            console.error('No content provided in request body');
-            return new Response(JSON.stringify({ error: 'No content provided' }), {
+            console.error("No content provided in request body");
+            return new Response(JSON.stringify({ error: "No content provided" }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-
           if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-            console.error('Missing Telegram configuration:', {
+            console.error("Missing Telegram configuration:", {
               hasToken: !!env.TELEGRAM_BOT_TOKEN,
               hasChatId: !!env.TELEGRAM_CHAT_ID,
               tokenLength: env.TELEGRAM_BOT_TOKEN?.length || 0,
               chatId: env.TELEGRAM_CHAT_ID
             });
-            return new Response(JSON.stringify({ 
-              error: 'Telegram configuration missing. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.' 
+            return new Response(JSON.stringify({
+              error: "Telegram configuration missing. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables."
             }), {
               status: 500,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-
-          console.log('Manual post attempt...', {
+          console.log("Manual post attempt...", {
             contentLength: content.length,
             hasToken: !!env.TELEGRAM_BOT_TOKEN,
             hasChatId: !!env.TELEGRAM_CHAT_ID,
-            tokenPrefix: env.TELEGRAM_BOT_TOKEN?.substring(0, 10) + '...',
+            tokenPrefix: env.TELEGRAM_BOT_TOKEN?.substring(0, 10) + "...",
             chatId: env.TELEGRAM_CHAT_ID
           });
-
-          // Sanitize content first
           let finalContent = sanitizeForTelegram(content);
-          
-          // Add footer to manual posts too
           const footer = await getPostFooter(env);
           if (footer.enabled) {
-            const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation\n\n<i>~ Your Trading Mentor</i> ✍️`;
+            const footerText = `
+
+\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501
+\u{1F4C8} <b>${footer.companyName || "TradingBot Pro"}</b>
+\u{1F4F1} ${footer.telegramChannel || "@tradingbot"}
+\u{1F310} ${footer.website || "tradingbot.com"}
+
+#TradingEducation
+
+<i>~ Your Trading Mentor</i> \u270D\uFE0F`;
             finalContent += footerText;
           }
-
-          // Ensure content is within limits
           if (finalContent.length > 1020) {
-            finalContent = finalContent.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
-          }
+            finalContent = finalContent.slice(0, 1e3) + "...\n\n" + (footer.enabled ? `\u{1F4C8} <b>${footer.companyName || "TradingBot Pro"}</b>
 
-          const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
+<i>~ Your Trading Mentor</i> \u270D\uFE0F` : "");
+          }
+          const imgUrl = getUnsplashImageUrl(["trading", "finance"]);
           const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl);
-          
-          console.log('Manual post successful');
+          console.log("Manual post successful");
           await updatePostingStats(env, true);
-          
           return new Response(JSON.stringify({ success: true, result }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
-          console.error('Manual post error:', {
+          console.error("Manual post error:", {
             message: error.message,
             stack: error.stack,
             name: error.name
           });
           await updatePostingStats(env, false);
-          return new Response(JSON.stringify({ 
+          return new Response(JSON.stringify({
             error: error.message,
-            details: error.stack 
+            details: error.stack
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Queue management endpoints
-      if (path === '/api/queue' && request.method === 'GET') {
+      if (path === "/api/queue" && request.method === "GET") {
         try {
           const queue = await getSubjectsQueue(env);
           return new Response(JSON.stringify({ queue }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      if (path === '/api/queue' && request.method === 'POST') {
+      if (path === "/api/queue" && request.method === "POST") {
         try {
           const { subject, market } = await request.json();
           if (!subject) {
-            return new Response(JSON.stringify({ error: 'Subject is required' }), {
+            return new Response(JSON.stringify({ error: "Subject is required" }), {
               status: 400,
-              headers: { 'Content-Type': 'application/json' }
+              headers: { "Content-Type": "application/json" }
             });
           }
-          
-          const newItem = await addSubjectToQueue(env, subject, market || 'crypto');
+          const newItem = await addSubjectToQueue(env, subject, market || "crypto");
           return new Response(JSON.stringify({ success: true, item: newItem }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      if (path.startsWith('/api/queue/') && request.method === 'DELETE') {
+      if (path.startsWith("/api/queue/") && request.method === "DELETE") {
         try {
-          const subjectId = path.split('/').pop();
-          if (subjectId === 'clear') {
-            // Clear entire queue
+          const subjectId = path.split("/").pop();
+          if (subjectId === "clear") {
             await saveSubjectsQueue(env, []);
           } else {
             await removeSubjectFromQueue(env, subjectId);
           }
           return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Stats endpoint
-      if (path === '/api/stats' && request.method === 'GET') {
+      if (path === "/api/stats" && request.method === "GET") {
         try {
           const stats = await getPostingStats(env);
           return new Response(JSON.stringify({ stats }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Footer management endpoints
-      if (path === '/api/footer' && request.method === 'GET') {
+      if (path === "/api/footer" && request.method === "GET") {
         try {
           const footer = await getPostFooter(env);
           return new Response(JSON.stringify({ footer }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      if (path === '/api/footer' && request.method === 'POST') {
+      if (path === "/api/footer" && request.method === "POST") {
         try {
           const { footer } = await request.json();
           await savePostFooter(env, footer);
           return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Debug endpoint
-      if (path === '/api/debug' && request.method === 'GET') {
+      if (path === "/api/debug" && request.method === "GET") {
         try {
           const debugInfo = {
-            timestamp: new Date().toISOString(),
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
             environment: {
               hasBotToken: !!env.TELEGRAM_BOT_TOKEN,
               botTokenLength: env.TELEGRAM_BOT_TOKEN?.length || 0,
-              botTokenFormat: env.TELEGRAM_BOT_TOKEN ? 
-                (env.TELEGRAM_BOT_TOKEN.includes(':') ? 'Valid format' : 'Invalid format (missing colon)') : 
-                'Not set',
+              botTokenFormat: env.TELEGRAM_BOT_TOKEN ? env.TELEGRAM_BOT_TOKEN.includes(":") ? "Valid format" : "Invalid format (missing colon)" : "Not set",
               hasChatId: !!env.TELEGRAM_CHAT_ID,
-              chatId: env.TELEGRAM_CHAT_ID || 'Not set',
-              chatIdType: env.TELEGRAM_CHAT_ID ? 
-                (env.TELEGRAM_CHAT_ID.toString().startsWith('-') ? 'Group/Channel' : 
-                 env.TELEGRAM_CHAT_ID.toString().startsWith('@') ? 'Username' : 'Private chat') : 'Not set',
+              chatId: env.TELEGRAM_CHAT_ID || "Not set",
+              chatIdType: env.TELEGRAM_CHAT_ID ? env.TELEGRAM_CHAT_ID.toString().startsWith("-") ? "Group/Channel" : env.TELEGRAM_CHAT_ID.toString().startsWith("@") ? "Username" : "Private chat" : "Not set",
               hasOpenRouterKey: !!env.OPENROUTER_API_KEY,
               openRouterKeyLength: env.OPENROUTER_API_KEY?.length || 0
             },
             validation: {
-              botTokenValid: env.TELEGRAM_BOT_TOKEN && 
-                           env.TELEGRAM_BOT_TOKEN.includes(':') && 
-                           env.TELEGRAM_BOT_TOKEN.length > 40,
-              chatIdValid: env.TELEGRAM_CHAT_ID && 
-                          env.TELEGRAM_CHAT_ID.toString().match(/^(-?\d+|@\w+)$/),
+              botTokenValid: env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_BOT_TOKEN.includes(":") && env.TELEGRAM_BOT_TOKEN.length > 40,
+              chatIdValid: env.TELEGRAM_CHAT_ID && env.TELEGRAM_CHAT_ID.toString().match(/^(-?\d+|@\w+)$/),
               configurationComplete: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID)
             }
           };
-
           return new Response(JSON.stringify(debugInfo), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
-          return new Response(JSON.stringify({ 
-            error: 'Debug check failed',
-            details: error.message 
+          return new Response(JSON.stringify({
+            error: "Debug check failed",
+            details: error.message
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Test post endpoint
-      if (path === '/api/test-post' && request.method === 'POST') {
+      if (path === "/api/test-post" && request.method === "POST") {
         try {
-          console.log('=== TEST POST STARTED ===');
-          console.log('Timestamp:', new Date().toISOString());
-          
-          // Environment check
-          console.log('Environment check:');
-          console.log('- TELEGRAM_BOT_TOKEN exists:', !!env.TELEGRAM_BOT_TOKEN);
-          console.log('- TELEGRAM_BOT_TOKEN length:', env.TELEGRAM_BOT_TOKEN?.length || 0);
-          console.log('- TELEGRAM_BOT_TOKEN format check:', env.TELEGRAM_BOT_TOKEN?.includes(':') ? 'PASS' : 'FAIL');
-          console.log('- TELEGRAM_CHAT_ID exists:', !!env.TELEGRAM_CHAT_ID);
-          console.log('- TELEGRAM_CHAT_ID value:', env.TELEGRAM_CHAT_ID);
-          console.log('- OPENROUTER_API_KEY exists:', !!env.OPENROUTER_API_KEY);
-          
+          console.log("=== TEST POST STARTED ===");
+          console.log("Timestamp:", (/* @__PURE__ */ new Date()).toISOString());
+          console.log("Environment check:");
+          console.log("- TELEGRAM_BOT_TOKEN exists:", !!env.TELEGRAM_BOT_TOKEN);
+          console.log("- TELEGRAM_BOT_TOKEN length:", env.TELEGRAM_BOT_TOKEN?.length || 0);
+          console.log("- TELEGRAM_BOT_TOKEN format check:", env.TELEGRAM_BOT_TOKEN?.includes(":") ? "PASS" : "FAIL");
+          console.log("- TELEGRAM_CHAT_ID exists:", !!env.TELEGRAM_CHAT_ID);
+          console.log("- TELEGRAM_CHAT_ID value:", env.TELEGRAM_CHAT_ID);
+          console.log("- OPENROUTER_API_KEY exists:", !!env.OPENROUTER_API_KEY);
           if (!env.TELEGRAM_BOT_TOKEN) {
-            const error = 'TELEGRAM_BOT_TOKEN environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_BOT_TOKEN';
-            console.error('CRITICAL ERROR:', error);
+            const error = "TELEGRAM_BOT_TOKEN environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_BOT_TOKEN";
+            console.error("CRITICAL ERROR:", error);
             throw new Error(error);
           }
-          
-          if (!env.TELEGRAM_BOT_TOKEN.includes(':')) {
-            const error = 'TELEGRAM_BOT_TOKEN format is invalid. It should look like: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
-            console.error('CRITICAL ERROR:', error);
+          if (!env.TELEGRAM_BOT_TOKEN.includes(":")) {
+            const error = "TELEGRAM_BOT_TOKEN format is invalid. It should look like: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11";
+            console.error("CRITICAL ERROR:", error);
             throw new Error(error);
           }
-          
           if (!env.TELEGRAM_CHAT_ID) {
-            const error = 'TELEGRAM_CHAT_ID environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_CHAT_ID';
-            console.error('CRITICAL ERROR:', error);
+            const error = "TELEGRAM_CHAT_ID environment variable is not set. Please configure it using: wrangler secret put TELEGRAM_CHAT_ID";
+            console.error("CRITICAL ERROR:", error);
             throw new Error(error);
           }
-          
-          console.log('Environment validation passed, proceeding with test post...');
+          console.log("Environment validation passed, proceeding with test post...");
           const result = await buildAndSend(env);
-          console.log('=== TEST POST COMPLETED SUCCESSFULLY ===');
-          
-          return new Response(JSON.stringify({ 
-            success: true, 
+          console.log("=== TEST POST COMPLETED SUCCESSFULLY ===");
+          return new Response(JSON.stringify({
+            success: true,
             result,
-            message: 'Test post sent successfully!'
+            message: "Test post sent successfully!"
           }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         } catch (error) {
-          console.error('=== TEST POST FAILED ===');
-          console.error('Error name:', error.name);
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-          
+          console.error("=== TEST POST FAILED ===");
+          console.error("Error name:", error.name);
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
           await updatePostingStats(env, false);
-          return new Response(JSON.stringify({ 
+          return new Response(JSON.stringify({
             error: error.message,
             details: error.stack,
-            timestamp: new Date().toISOString()
+            timestamp: (/* @__PURE__ */ new Date()).toISOString()
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { "Content-Type": "application/json" }
           });
         }
       }
-
-      // Return 404 for unknown API endpoints
-      return new Response('Not Found', { status: 404 });
+      return new Response("Not Found", { status: 404 });
     }
-
-    // Return 404 for unknown paths
-    return new Response('Not Found', { status: 404 });
+    return new Response("Not Found", { status: 404 });
   }
 };
+export {
+  index_default as default
+};
+//# sourceMappingURL=index.js.map
