@@ -43,6 +43,7 @@ async function getPostFooter(env) {
   }
 }
 
+
 async function savePostFooter(env, footerData) {
   try {
     if (env.SUBJECTS_QUEUE) {
