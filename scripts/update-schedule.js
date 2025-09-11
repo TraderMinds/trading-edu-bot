@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // scripts/update-schedule.js
 // Helper script to update wrangler.toml cron schedule
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const path = require('path');

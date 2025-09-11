@@ -910,7 +910,6 @@ export default {
       try {
         // Check if we should respect UI-configured schedule
         const storedSchedule = await env.SUBJECTS_QUEUE.get('schedule');
-        const currentTime = new Date();
         
         // If a custom schedule is set in UI, validate if we should run now
         if (storedSchedule && storedSchedule !== '0 * * * *') {
