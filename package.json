@@ -4,9 +4,10 @@
   "description": "Cloudflare Worker that posts hourly trading education to Telegram",
   "scripts": {
     "start": "wrangler dev --local",
-    "deploy": "wrangler deploy",
+    "deploy": "npx wrangler deploy --env=\"\"",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "update-schedule": "node scripts/update-schedule.js"
   },
   "dependencies": {
     "wrangler": "^4.35.0"

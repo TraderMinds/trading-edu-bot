@@ -908,6 +908,16 @@ export default {
     // Use waitUntil so the scheduled event can finish asynchronously
     ctx.waitUntil((async () => {
       try {
+        // Check if we should respect UI-configured schedule
+        const storedSchedule = await env.SUBJECTS_QUEUE.get('schedule');
+        const currentTime = new Date();
+        
+        // If a custom schedule is set in UI, validate if we should run now
+        if (storedSchedule && storedSchedule !== '0 * * * *') {
+          console.warn(`UI Schedule configured: ${storedSchedule}, but worker triggered by wrangler.toml cron`);
+          console.warn(`Note: Update wrangler.toml crons = ["${storedSchedule}"] and redeploy for schedule to take effect`);
+        }
+        
         const res = await buildAndSend(env);
         console.warn('Posted to Telegram:', res);
       } catch (err) {
@@ -2998,8 +3008,14 @@ Remember: This should be professional-grade content that traders can immediately
           return new Response(JSON.stringify({ 
             success: true,
             schedule,
-            message: 'Schedule updated successfully. Note: To fully apply the new schedule, update wrangler.toml and redeploy.',
-            warning: 'Current cron triggers in wrangler.toml need manual update for the schedule to take effect.'
+            message: 'Schedule updated successfully. To apply this schedule, follow these steps:',
+            warning: 'IMPORTANT: Update wrangler.toml and redeploy to activate new schedule',
+            instructions: [
+              '1. Open wrangler.toml file',
+              `2. Change crons = ["0 * * * *"] to crons = ["${schedule}"]`,
+              '3. Run: npm run deploy',
+              '4. Verify in deployment output that schedule shows your new cron'
+            ]
           }), {
             headers: { 'Content-Type': 'application/json' }
           });
