@@ -16,5 +16,9 @@
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^8.0.0",
     "prettier": "^2.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"]
   }
 }
