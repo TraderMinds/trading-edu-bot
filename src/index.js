@@ -150,6 +150,68 @@ async function addSubjectToQueue(env, subject, market = 'crypto') {
   return newItem;
 }
 
+async function bulkAddSubjectsToQueue(env, subjects, market = 'crypto') {
+  const queue = await getSubjectsQueue(env);
+  const results = { added: [], failed: [] };
+  const timestamp = new Date().toISOString();
+  
+  // Get existing subjects for duplicate detection
+  const existingSubjects = new Set(queue.map(item => 
+    `${item.subject.trim().toLowerCase()}-${item.market.toLowerCase()}`
+  ));
+  
+  let idCounter = Date.now();
+  
+  for (const subject of subjects) {
+    const trimmedSubject = subject.trim();
+    
+    // Skip empty subjects
+    if (!trimmedSubject) {
+      results.failed.push({ subject, reason: 'Empty subject' });
+      continue;
+    }
+    
+    // Skip subjects that are too short (less than 3 characters)
+    if (trimmedSubject.length < 3) {
+      results.failed.push({ subject, reason: 'Subject too short (minimum 3 characters)' });
+      continue;
+    }
+    
+    // Skip subjects that are too long (more than 200 characters)
+    if (trimmedSubject.length > 200) {
+      results.failed.push({ subject, reason: 'Subject too long (maximum 200 characters)' });
+      continue;
+    }
+    
+    // Check for duplicates
+    const subjectKey = `${trimmedSubject.toLowerCase()}-${market.toLowerCase()}`;
+    if (existingSubjects.has(subjectKey)) {
+      results.failed.push({ subject, reason: 'Duplicate subject' });
+      continue;
+    }
+    
+    // Add to queue and track as existing
+    const newItem = {
+      id: (idCounter++).toString(),
+      subject: trimmedSubject,
+      market,
+      addedAt: timestamp,
+      processed: false
+    };
+    
+    queue.push(newItem);
+    existingSubjects.add(subjectKey);
+    results.added.push(newItem);
+  }
+  
+  // Save all changes in one atomic operation
+  if (results.added.length > 0) {
+    await saveSubjectsQueue(env, queue);
+  }
+  
+  return results;
+}
+
 async function getNextSubject(env) {
   const queue = await getSubjectsQueue(env);
   return queue.find(item => !item.processed) || null;
@@ -1821,28 +1883,37 @@ No errors recorded yet
 
             try {
                 showLoading(true);
-                let successCount = 0;
                 
-                for (const subject of subjects) {
-                    try {
-                        const response = await fetch(\`\${API_BASE}/queue\`, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + token
-                            },
-                            body: JSON.stringify({ subject, market })
-                        });
-                        if (response.ok) successCount++;
-                    } catch (error) {
-                        console.error('Failed to add subject:', subject, error);
-                    }
+                // Use bulk add endpoint for atomic operation
+                const response = await fetch(\`\${API_BASE}/queue\`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ subjects, market })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to add subjects');
                 }
 
+                const result = await response.json();
+                
                 document.getElementById('bulkSubjects').value = '';
                 document.getElementById('bulkModal').classList.add('hidden');
-                showNotification(\`Added \${successCount} of \${subjects.length} subjects successfully!\`, 'success');
+                
+                // Show detailed results
+                let message = \`Successfully added \${result.added} of \${result.total} subjects!\`;
+                
+                if (result.failed > 0) {
+                    message += \`\\n\${result.failed} subjects were skipped (duplicates, invalid format, etc.)\`;
+                }
+                
+                showNotification(message, result.added > 0 ? 'success' : 'warning');
                 await loadQueue();
+                
             } catch (error) {
                 showNotification(\`Bulk add failed: \${error.message}\`, 'error');
             } finally {
@@ -2307,7 +2378,24 @@ Remember: This should be professional-grade content that traders can immediately
 
       if (path === '/api/queue' && request.method === 'POST') {
         try {
-          const { subject, market } = await request.json();
+          const body = await request.json();
+          
+          // Handle bulk add (array of subjects)
+          if (body.subjects && Array.isArray(body.subjects)) {
+            const { subjects, market } = body;
+            const results = await bulkAddSubjectsToQueue(env, subjects, market || 'crypto');
+            return new Response(JSON.stringify({ 
+              success: true, 
+              added: results.added,
+              failed: results.failed,
+              total: subjects.length
+            }), {
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
+          // Handle single subject add
+          const { subject, market } = body;
           if (!subject) {
             return new Response(JSON.stringify({ error: 'Subject is required' }), {
               status: 400,
