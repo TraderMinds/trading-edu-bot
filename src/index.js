@@ -4,6 +4,8 @@
 // TELEGRAM_BOT_TOKEN - required
 // TELEGRAM_CHAT_ID - required
 // OPENROUTER_API_KEY - optional (if provided, worker will call OpenRouter for text generation)
+// OLLAMA_API_URL - optional (fallback AI service when OpenRouter fails or quota exceeded)
+// OLLAMA_API_KEY - optional (API key for Ollama service if required)
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org';
 const MAX_RETRIES = 3;
@@ -487,6 +489,159 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
   }
 }
 
+async function generateTextWithOllama(prompt, apiUrl, apiKey = null, model = 'llama3.2') {
+  if (!apiUrl) {
+    throw new Error('Ollama API URL is required');
+  }
+
+  // Ensure URL ends with proper endpoint
+  const url = apiUrl.endsWith('/api/generate') ? apiUrl : `${apiUrl.replace(/\/+$/, '')}/api/generate`;
+  
+  console.warn('Generating content with Ollama:', {
+    url: url,
+    hasApiKey: !!apiKey,
+    model: model,
+    promptLength: prompt.length
+  });
+
+  // Simplified system prompt for Ollama (often better with shorter prompts)
+  const systemPrompt = `You are an expert trading educator. Create educational trading content for Telegram posts.
+
+Requirements:
+- Length: 1800-2800 characters
+- Format: Use <b>bold</b>, <i>italic</i>, <u>underline</u> for emphasis
+- Structure: Header, main content (3-4 sections), actionable steps, conclusion
+- Style: Professional, educational, specific examples with numbers
+- Include emojis strategically
+- Focus on practical, immediately actionable advice
+
+Topic: ${prompt}`;
+
+  const body = {
+    model: model,
+    prompt: systemPrompt,
+    stream: false,
+    options: {
+      temperature: 0.7,
+      top_p: 0.9,
+      top_k: 40,
+      num_predict: 1500 // Limit response length
+    }
+  };
+
+  try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for Ollama
+    
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add API key if provided
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+
+    console.warn('Ollama API response status:', res.status);
+    
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error('Ollama API error response:', txt);
+      throw new Error(`Ollama API error (${res.status}): ${txt}`);
+    }
+
+    const json = await res.json();
+    console.warn('Ollama API response:', JSON.stringify(json));
+    
+    // Handle Ollama response format
+    if (json.response) {
+      const content = json.response.trim();
+      console.warn('Generated content length (Ollama):', content.length);
+      return content;
+    }
+    
+    // If no response field, log and throw error
+    console.error('Unexpected Ollama API response shape:', JSON.stringify(json));
+    throw new Error('Unexpected response format from Ollama API');
+  } catch (error) {
+    console.error('Ollama API error:', {
+      name: error.name,
+      message: error.message,
+      url: url
+    });
+    
+    // Handle specific error types
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout: Ollama generation took too long (>45s)');
+    } else if (error.message.includes('fetch') || error.message.includes('network')) {
+      throw new Error('Network error: Unable to connect to Ollama service');
+    } else {
+      throw new Error(`Ollama generation failed: ${error.message}`);
+    }
+  }
+}
+
+// Enhanced AI content generation with fallback support
+async function generateAIContent(prompt, env, model = 'deepseek/deepseek-chat-v3.1:free') {
+  console.warn('Starting AI content generation with fallback support');
+  
+  // Try OpenRouter first
+  if (env.OPENROUTER_API_KEY) {
+    try {
+      console.warn('Attempting OpenRouter generation...');
+      const content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model);
+      console.warn('✅ OpenRouter generation successful');
+      return { content, source: 'OpenRouter', model };
+    } catch (error) {
+      console.warn('❌ OpenRouter failed:', error.message);
+      
+      // Check if it's a quota/rate limit error that should trigger Ollama fallback
+      const shouldFallback = 
+        error.message.includes('quota') ||
+        error.message.includes('rate limit') ||
+        error.message.includes('timeout') ||
+        error.message.includes('429') ||
+        error.message.includes('insufficient') ||
+        error.message.includes('exceeded');
+        
+      if (shouldFallback && env.OLLAMA_API_URL) {
+        console.warn('🔄 OpenRouter quota/limit exceeded, trying Ollama fallback...');
+      } else if (env.OLLAMA_API_URL) {
+        console.warn('🔄 OpenRouter error, trying Ollama fallback...');
+      } else {
+        throw error; // Re-throw if no fallback available
+      }
+    }
+  }
+  
+  // Try Ollama as fallback
+  if (env.OLLAMA_API_URL) {
+    try {
+      console.warn('Attempting Ollama generation...');
+      const ollamaModel = env.OLLAMA_MODEL || 'llama3.2';
+      const content = await generateTextWithOllama(prompt, env.OLLAMA_API_URL, env.OLLAMA_API_KEY, ollamaModel);
+      console.warn('✅ Ollama generation successful');
+      return { content, source: 'Ollama', model: ollamaModel };
+    } catch (error) {
+      console.warn('❌ Ollama failed:', error.message);
+      throw new Error(`All AI services failed. OpenRouter: unavailable, Ollama: ${error.message}`);
+    }
+  }
+  
+  // If no AI services are configured or all failed
+  throw new Error('No AI services configured or all services failed');
+}
+
 // Sanitize content for Telegram HTML parsing
 function sanitizeForTelegram(content) {
   if (!content) return '';
@@ -849,23 +1004,31 @@ Keep it highly actionable and professional for serious traders.`;
   }
 
   let caption = '';
-  if (env.OPENROUTER_API_KEY) {
+  let aiSource = '';
+  
+  // Check if any AI service is available
+  if (env.OPENROUTER_API_KEY || env.OLLAMA_API_URL) {
     try {
       // Use model from queue item or default for scheduled posts
       const scheduledModel = nextSubject?.model || 'deepseek/deepseek-chat-v3.1:free';
       console.warn('Using AI model for scheduled post:', scheduledModel);
-      caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
+      
+      const result = await generateAIContent(prompt, env, scheduledModel);
+      caption = result.content;
+      aiSource = result.source;
+      
+      console.warn(`✅ Content generated successfully using ${aiSource} (${result.model})`);
     } catch (err) {
       // AI call failed - don't send anything
-      console.error('OpenRouter call failed:', err.message);
+      console.error('AI generation failed:', err.message);
       console.warn('No fallback content available - skipping post');
-      throw new Error(`AI API not working: ${err.message}`);
+      throw new Error(`All AI services failed: ${err.message}`);
     }
   } else {
-    // No API key - don't send anything
-    console.error('No OpenRouter API key configured');
-    console.warn('No API key available - skipping post');
-    throw new Error('OpenRouter API key not configured');
+    // No AI services configured - don't send anything
+    console.error('No AI services configured (OPENROUTER_API_KEY or OLLAMA_API_URL required)');
+    console.warn('No AI services available - skipping post');
+    throw new Error('No AI services configured. Please set OPENROUTER_API_KEY or OLLAMA_API_URL');
   }
 
   // Sanitize caption for Telegram
@@ -1385,6 +1548,8 @@ export default {
                                     <div>TELEGRAM_BOT_TOKEN: <span class="loading">Checking...</span></div>
                                     <div>TELEGRAM_CHAT_ID: <span class="loading">Checking...</span></div>
                                     <div>OPENROUTER_API_KEY: <span class="loading">Checking...</span></div>
+                                    <div>OLLAMA_API_URL: <span class="loading">Checking...</span></div>
+                                    <div>OLLAMA_API_KEY: <span class="loading">Checking...</span></div>
                                 </div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-lg">
@@ -2261,6 +2426,20 @@ No errors recorded yet
                             \${data.environment.hasOpenRouterKey ? \` (\${data.environment.openRouterKeyLength} chars)\` : ''}
                         </span>
                     </div>
+                    <div class="flex justify-between">
+                        <span>OLLAMA_API_URL:</span> 
+                        <span class="\${data.environment.hasOllamaUrl ? 'text-green-600' : 'text-yellow-600'}">
+                            \${data.environment.hasOllamaUrl ? '✓ Set' : '⚠ Missing (Optional)'}
+                            \${data.environment.hasOllamaUrl ? \` (\${data.environment.ollamaUrl})\` : ''}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>OLLAMA_API_KEY:</span> 
+                        <span class="\${data.environment.hasOllamaKey ? 'text-green-600' : 'text-gray-500'}">
+                            \${data.environment.hasOllamaKey ? '✓ Set' : '- Not set (Optional)'}
+                            \${data.environment.hasOllamaKey ? \` (\${data.environment.ollamaKeyLength} chars)\` : ''}
+                        </span>
+                    </div>
                     <div class="mt-3 pt-3 border-t">
                         <div class="flex justify-between">
                             <span>Configuration Status:</span> 
@@ -2649,43 +2828,52 @@ No errors recorded yet
 Remember: This should be professional-grade content that traders can immediately apply to improve their ${market} trading results.`;
 
           let content = '';
-          if (env.OPENROUTER_API_KEY) {
+          let aiSource = '';
+          
+          // Check if any AI service is available
+          if (env.OPENROUTER_API_KEY || env.OLLAMA_API_URL) {
             try {
-              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model);
+              const result = await generateAIContent(prompt, env, model);
+              content = result.content;
+              aiSource = result.source;
+              
               if (!content) {
                 throw new Error('No content generated');
               }
               
-              // Additional formatting for Telegram
-              content = content
-                .replace(/\n\s*\n/g, '\n\n') // Standardize spacing
-                .replace(/•/g, '•') // Standardize bullet points
-                .replace(/---/g, '\n━━━━━━━━━━\n') // Nice dividers
-                .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
-                .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
-                .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
-              
-              // Sanitize for Telegram HTML parsing
-              content = sanitizeForTelegram(content);
-            } catch (aiError) {
-              console.error('AI generation error:', aiError);
-              // No fallback - return error
+              console.warn(`✅ Manual content generated using ${aiSource} (${result.model})`);
+            } catch (error) {
+              console.error('AI generation failed for manual post:', error.message);
               return new Response(JSON.stringify({ 
-                error: 'AI API not working: ' + (aiError.message || 'Unknown error')
+                error: 'AI generation failed',
+                details: error.message,
+                suggestion: 'Try again or check AI service configuration'
               }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
               });
             }
           } else {
-            // No API key - return error
             return new Response(JSON.stringify({ 
-              error: 'OpenRouter API key not configured' 
+              error: 'No AI services configured',
+              details: 'Please configure OPENROUTER_API_KEY or OLLAMA_API_URL'
             }), {
               status: 400,
               headers: { 'Content-Type': 'application/json' }
             });
           }
+          
+          // Additional formatting for Telegram
+          content = content
+            .replace(/\n\s*\n/g, '\n\n') // Standardize spacing
+            .replace(/•/g, '•') // Standardize bullet points
+            .replace(/---/g, '\n━━━━━━━━━━\n') // Nice dividers
+            .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
+            .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
+            .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
+          
+          // Sanitize for Telegram HTML parsing
+          content = sanitizeForTelegram(content);
 
           return new Response(JSON.stringify({ content }), {
             headers: { 'Content-Type': 'application/json' }
@@ -2937,7 +3125,11 @@ Remember: This should be professional-grade content that traders can immediately
                 (env.TELEGRAM_CHAT_ID.toString().startsWith('-') ? 'Group/Channel' : 
                  env.TELEGRAM_CHAT_ID.toString().startsWith('@') ? 'Username' : 'Private chat') : 'Not set',
               hasOpenRouterKey: !!env.OPENROUTER_API_KEY,
-              openRouterKeyLength: env.OPENROUTER_API_KEY?.length || 0
+              openRouterKeyLength: env.OPENROUTER_API_KEY?.length || 0,
+              hasOllamaUrl: !!env.OLLAMA_API_URL,
+              ollamaUrl: env.OLLAMA_API_URL || 'Not set',
+              hasOllamaKey: !!env.OLLAMA_API_KEY,
+              ollamaKeyLength: env.OLLAMA_API_KEY?.length || 0
             },
             validation: {
               botTokenValid: env.TELEGRAM_BOT_TOKEN && 
