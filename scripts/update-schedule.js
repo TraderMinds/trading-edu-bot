@@ -36,17 +36,58 @@ async function updateSchedule() {
 
     let content = fs.readFileSync(wranglerPath, 'utf8');
     
-    // Update the crons line
-    const cronRegex = /crons = \["[^"]*"\]/;
+    // Create backup of wrangler.toml
+    const backupPath = wranglerPath + '.backup-' + Date.now();
+    fs.writeFileSync(backupPath, content);
+    console.log(`💾 Created backup: ${path.basename(backupPath)}`);
+    
+    // Show current schedule
+    const currentMatch = content.match(/crons\s*=\s*\[\s*"([^"]*)"\s*\]/);
+    if (currentMatch) {
+      console.log(`📊 Current schedule: ${currentMatch[1]}`);
+    }
+    
+    // Update the crons line with more robust regex
+    const cronRegex = /crons\s*=\s*\[\s*"[^"]*"\s*\]/;
     const newCronLine = `crons = ["${schedule}"]`;
     
     if (cronRegex.test(content)) {
+      const oldContent = content;
       content = content.replace(cronRegex, newCronLine);
+      
+      // Verify the change was made
+      if (content === oldContent) {
+        console.error('Failed to update schedule - content unchanged');
+        process.exit(1);
+      }
+      
       fs.writeFileSync(wranglerPath, content);
       
       console.log('✅ Updated wrangler.toml successfully');
       console.log(`📅 New schedule: ${schedule}`);
       console.log('🚀 Run "npm run deploy" to apply changes');
+      
+      // Also update POST_FREQUENCY in environment sections to keep consistency
+      const postFreqRegex = /POST_FREQUENCY\s*=\s*"[^"]*"/g;
+      content = content.replace(postFreqRegex, `POST_FREQUENCY = "${schedule}"`);
+      
+      // Write the updated content again
+      fs.writeFileSync(wranglerPath, content);
+      
+      // Verify the update by reading the file again
+      const verifyContent = fs.readFileSync(wranglerPath, 'utf8');
+      const verifyMatch = verifyContent.match(/crons\s*=\s*\[\s*"([^"]*)"\s*\]/);
+      if (verifyMatch && verifyMatch[1] === schedule) {
+        console.log(`✅ Verified: Schedule is now ${verifyMatch[1]}`);
+        
+        // Check if POST_FREQUENCY was also updated
+        const postFreqMatches = verifyContent.match(/POST_FREQUENCY\s*=\s*"([^"]*)"/g);
+        if (postFreqMatches) {
+          console.log(`✅ Updated ${postFreqMatches.length} POST_FREQUENCY entries`);
+        }
+      } else {
+        console.warn(`⚠️ Warning: Expected "${schedule}" but file contains "${verifyMatch ? verifyMatch[1] : 'not found'}"`);
+      }
       
       // Show human-readable schedule description
       const descriptions = {
