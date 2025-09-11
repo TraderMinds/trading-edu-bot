@@ -202,47 +202,82 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
   }
 }
 
-async function generateTextWithOpenRouter(prompt, apiKey) {
+async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-oss-20b:free') {
   if (!apiKey) {
     throw new Error('OpenRouter API key is required');
   }
 
   const url = 'https://openrouter.ai/api/v1/chat/completions';
-  console.log('Generating content with OpenRouter API key:', apiKey ? 'Present' : 'Missing');
-  
+  console.log('Generating content with OpenRouter:', {
+    hasApiKey: !!apiKey,
+    model: model,
+    promptLength: prompt.length
+  });
+
   const body = {
-    model: 'openai/gpt-oss-20b:free', // Using free OpenAI OSS model
+    model: model,
     messages: [
       { 
         role: 'system', 
-        content: `You are an expert trading educator specializing in forex and cryptocurrency markets.
-        Create beautifully formatted educational content for Telegram that includes:
+        content: `You are a world-class trading educator and financial analyst with 15+ years of experience in forex and cryptocurrency markets. Your expertise spans technical analysis, fundamental analysis, risk management, psychology, and market dynamics.
 
-        1. An eye-catching title with emojis
-        2. A clear introduction
-        3. Main content sections with subheadings
-        4. Examples and explanations
-        5. Tips and warnings
-        6. Action steps
-        7. Key takeaways
+        🎯 YOUR MISSION: Create exceptional educational content that transforms novice traders into knowledgeable, disciplined professionals.
 
-        Formatting Guidelines:
-        - Use HTML tags for formatting (<b>bold</b>, <u>underline</u>, <i>italic</i>)
-        - Use emojis extensively but appropriately
-        - Create clear section breaks with emoji dividers
-        - Use bullet points and numbered lists where appropriate
-        - Format important points in bold
-        - Add relevant emojis for each section
-        - Keep paragraphs short for mobile readability
-        - Use dividers (e.g., ━━━━━━━━━━) between major sections
+        📝 CONTENT STRUCTURE (Follow this exactly):
+        1. 🎯 Compelling Title with relevant emojis
+        2. ⏱️ Reading time estimate
+        3. 🔥 Hook/Problem statement  
+        4. 📚 Educational sections with clear subheadings
+        5. 💡 Practical examples with real scenarios
+        6. ⚠️ Critical warnings and common mistakes
+        7. 🛠️ Actionable implementation steps
+        8. 🎯 Key takeaways summary
+        9. 📈 Next steps for the reader
 
-        Minimum length should be 500 words.
-        Make it visually appealing and easy to read on mobile devices.`
+        📱 TELEGRAM FORMATTING REQUIREMENTS:
+        - ONLY use these HTML tags: <b>bold</b>, <i>italic</i>, <u>underline</u>, <code>code</code>
+        - NEVER use: <ul>, <ol>, <li>, <p>, <h1>, <h2>, <h3>, <h4>, <h5>, <h6>, <br>, <div>, <span>
+        - Strategic emoji usage (not overwhelming, but engaging)
+        - Short paragraphs (2-3 lines max) for mobile readability
+        - Use ━━━━━━━━━━ as section dividers
+        - Use • for bullet points (NOT <li> tags)
+        - Use numbered lists with 1., 2., 3. (NOT <ol> tags)
+        - Highlight key concepts in <b>bold</b>
+        - Use <i>italic</i> for emphasis and tips
+        - Add <u>underline</u> for critical warnings
+
+        🎨 VISUAL HIERARCHY:
+        - Main headings: 📊 <b>SECTION NAME</b>
+        - Sub-points: • Point details
+        - Important notes: ⚠️ <b>WARNING:</b> <i>Details</i>
+        - Pro tips: 💡 <b>PRO TIP:</b> <i>Insight</i>
+        - Key strategies: 🎯 <b>STRATEGY:</b> Details
+
+        📏 CONTENT GUIDELINES:
+        - Target 600-800 words for comprehensive coverage
+        - Include specific numbers, percentages, and timeframes
+        - Provide actionable, implementable advice
+        - Balance theory with practical application
+        - Include psychological insights where relevant
+        - Reference current market conditions when appropriate
+
+        🧠 EXPERTISE AREAS TO DRAW FROM:
+        - Technical Analysis (patterns, indicators, price action)
+        - Risk Management (position sizing, stop losses, portfolio theory)
+        - Market Psychology (emotions, biases, discipline)
+        - Fundamental Analysis (economic factors, news impact)
+        - Trading Strategies (scalping, swing, position trading)
+        - Market Structure (support/resistance, trends, reversals)
+
+        Remember: You're not just sharing information—you're building competent, confident traders who can navigate markets successfully while managing risk properly.`
       },
       { role: 'user', content: prompt }
     ],
-    max_tokens: 1500, // Increased token limit for longer content
-    temperature: 0.7 // Balanced between creativity and consistency
+    max_tokens: 2000, // Increased for more comprehensive content
+    temperature: 0.8, // Higher creativity for more engaging content
+    top_p: 0.9, // Better coherence
+    frequency_penalty: 0.1, // Reduce repetition
+    presence_penalty: 0.1 // Encourage diverse topics
   };
 
   console.log('Making OpenRouter API request with body:', JSON.stringify(body));
@@ -299,11 +334,69 @@ async function generateTextWithOpenRouter(prompt, apiKey) {
   }
 }
 
+// Sanitize content for Telegram HTML parsing
+function sanitizeForTelegram(content) {
+  if (!content) return '';
+  
+  console.log('Sanitizing content for Telegram, original length:', content.length);
+  
+  // Replace unsupported HTML tags with Telegram-compatible alternatives
+  let sanitized = content
+    // Convert <ul> and <ol> lists to bullet points
+    .replace(/<ul[^>]*>/gi, '')
+    .replace(/<\/ul>/gi, '')
+    .replace(/<ol[^>]*>/gi, '')
+    .replace(/<\/ol>/gi, '')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/li>/gi, '\n')
+    
+    // Convert <h1-h6> headers to bold text
+    .replace(/<h[1-6][^>]*>/gi, '\n<b>')
+    .replace(/<\/h[1-6]>/gi, '</b>\n')
+    
+    // Convert <p> tags to line breaks
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<\/p>/gi, '\n\n')
+    
+    // Convert <br> tags to line breaks
+    .replace(/<br\s*\/?>/gi, '\n')
+    
+    // Convert <strong> to <b>
+    .replace(/<strong[^>]*>/gi, '<b>')
+    .replace(/<\/strong>/gi, '</b>')
+    
+    // Convert <em> to <i>
+    .replace(/<em[^>]*>/gi, '<i>')
+    .replace(/<\/em>/gi, '</i>')
+    
+    // Remove any other unsupported HTML tags while preserving content
+    .replace(/<(?!\/?(b|i|u|s|code|pre|a\s)[^>]*>)[^>]+>/gi, '')
+    
+    // Clean up multiple consecutive newlines
+    .replace(/\n{3,}/g, '\n\n')
+    
+    // Clean up spaces around newlines
+    .replace(/\s*\n\s*/g, '\n')
+    .trim();
+  
+  console.log('Content sanitized for Telegram, new length:', sanitized.length);
+  
+  // Log any remaining potentially problematic tags for debugging
+  const remainingTags = sanitized.match(/<[^>]+>/g);
+  if (remainingTags) {
+    console.log('Remaining HTML tags after sanitization:', remainingTags);
+  }
+  
+  return sanitized;
+}
+
 function fallbackText(topic) {
   const tips = [
     // Comprehensive Risk Management Guide
-    `🎯 <b>Ultimate Guide to Risk Management in ${topic} Trading</b> 📊
-⏱ Reading Time: 4 minutes
+    `🎯 <b>Master Risk Management: Your ${topic.charAt(0).toUpperCase() + topic.slice(1)} Trading Survival Guide</b> 📊
+⏱ Reading Time: 5 minutes | 🎯 Skill Level: All Levels
+
+🔥 <b>Why 90% of ${topic} traders fail:</b> They focus on profits while ignoring the one thing that determines long-term success—risk management.
 
 ━━━━━━━━━━ Introduction ━━━━━━━━━━
 
@@ -458,7 +551,107 @@ Key Takeaways:
 4. Patterns repeat across timeframes
 5. Risk management trumps perfect entry
 
-Remember: Technical analysis is a probability tool, not a guarantee. Combine it with proper risk management for best results.`
+Remember: Technical analysis is a probability tool, not a guarantee. Combine it with proper risk management for best results.`,
+
+    // Market Psychology and Discipline Guide  
+    `🧠 <b>Trading Psychology Mastery: Win the Mental Game in ${topic}</b> 🎯
+⏱ Reading Time: 4 minutes | 🎯 Level: Intermediate
+
+🔥 <b>The Hard Truth:</b> Your biggest enemy in ${topic} trading isn't the market—it's your own mind.
+
+━━━━━━━━━━ The Psychology Factor ━━━━━━━━━━
+
+📊 <b>Statistics That Matter:</b>
+• 80% of trading decisions are emotional, not logical
+• Fear and greed account for 90% of trading losses
+• Disciplined traders outperform by 15-25% annually
+
+🧠 <b>1. Emotional Control Framework</b>
+
+<b>The FEAR Response:</b>
+• <i>Fear of Missing Out (FOMO)</i> → Chasing pumps
+• <i>Fear of Loss</i> → Premature exits
+• <i>Fear of Being Wrong</i> → Ignoring stop losses
+
+💡 <b>SOLUTION:</b> <i>Pre-define your rules and stick to them religiously</i>
+
+<b>The GREED Trap:</b>
+• Overleveraging positions
+• Not taking profits at targets  
+• Adding to losing positions
+
+⚠️ <b>WARNING:</b> <i>Greed turns winning trades into disasters!</i>
+
+🎯 <b>2. Building Mental Discipline</b>
+
+<b>Pre-Market Routine:</b>
+✓ Review your trading plan
+✓ Set daily risk limits
+✓ Identify key levels and setups
+✓ Prepare for multiple scenarios
+
+<b>During Trading:</b>
+✓ Follow your predetermined rules
+✓ Take breaks every 2 hours
+✓ Avoid revenge trading
+✓ Document your emotions
+
+<b>Post-Trading Review:</b>
+✓ Analyze both wins and losses
+✓ Record emotional triggers
+✓ Identify improvement areas
+✓ Plan tomorrow's approach
+
+🔄 <b>3. The Discipline Multiplier</b>
+
+• <b>Rule #1:</b> Never risk more than 2% per trade
+• <b>Rule #2:</b> Always use stop losses
+• <b>Rule #3:</b> Take profits at predetermined levels
+• <b>Rule #4:</b> Never trade when emotional
+
+🏆 <b>WINNING MINDSET:</b> <i>Focus on process, not profits</i>
+
+📈 <b>4. Advanced Mental Techniques</b>
+
+<b>Visualization:</b>
+• Mentally rehearse perfect trade execution
+• Visualize handling losses calmly
+• Practice sticking to your plan under pressure
+
+<b>Meditation & Mindfulness:</b>
+• 10 minutes daily meditation
+• Practice present-moment awareness
+• Develop emotional detachment from outcomes
+
+<b>Journal Your Journey:</b>
+• Track emotional patterns
+• Record trigger situations  
+• Monitor psychological growth
+• Celebrate small wins
+
+━━━━━━━━━━ Key Takeaways ━━━━━━━━━━
+
+🎯 <b>Remember:</b>
+
+1️⃣ Trading is 20% strategy, 80% psychology
+2️⃣ Consistency beats perfection every time
+3️⃣ Discipline is your competitive advantage  
+4️⃣ Master yourself first, then the markets
+5️⃣ Process focus leads to profit results
+
+💪 <b>Your Action Plan:</b>
+
+1. Create a detailed trading plan with rules
+2. Start a trading journal today
+3. Practice meditation/mindfulness daily
+4. Set up accountability systems
+5. Review and refine weekly
+
+🎓 <b>Final Truth:</b> <i>The trader who controls their emotions controls their destiny in ${topic} markets. Start building that control today!</i>
+
+#TradingPsychology #${topic}Trading #Discipline #Mindset
+
+Remember: Markets are unpredictable, but your response to them doesn't have to be. Develop the mental edge that separates professionals from amateurs.`
   ];
   return tips[Math.floor(Math.random() * tips.length)];
 }
@@ -580,7 +773,9 @@ async function buildAndSend(env) {
   let caption = '';
   if (env.OPENROUTER_API_KEY) {
     try {
-      caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
+      // Use a balanced model for scheduled posts
+      const scheduledModel = 'deepseek/deepseek-chat-v3.1:free';
+      caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
     } catch (err) {
       // fallback to template if AI call fails
       console.error('OpenRouter call failed:', err.message);
@@ -589,6 +784,9 @@ async function buildAndSend(env) {
   } else {
     caption = fallbackText(topic);
   }
+
+  // Sanitize caption for Telegram
+  caption = sanitizeForTelegram(caption);
 
   // Add footer to caption if enabled
   const footer = await getPostFooter(env);
@@ -873,11 +1071,20 @@ export default {
                                     <i class="fas fa-brain mr-1"></i>AI Model
                                 </label>
                                 <select id="model" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500">
-                                    <option value="openai/gpt-oss-20b:free">🚀 GPT OSS 20B (Fast & Free)</option>
-                                    <option value="openai/gpt-oss-120b:free">⚡ GPT OSS 120B (Powerful & Free)</option>
-                                    <option value="deepseek/deepseek-chat-v3.1:free">🧠 DeepSeek V3.1 (Advanced & Free)</option>
-                                    <option value="z-ai/glm-4.5-air:free">💨 GLM 4.5 Air (Efficient & Free)</option>
+                                    <optgroup label="🆓 Free Models">
+                                        <option value="openai/gpt-oss-120b:free">⚡ GPT OSS 120B - Most Powerful</option>
+                                        <option value="deepseek/deepseek-chat-v3.1:free">🧠 DeepSeek V3.1 - Advanced Reasoning</option>
+                                        <option value="nvidia/nemotron-nano-9b-v2:free">🔥 NVIDIA Nemotron Nano 9B V2 - Latest</option>
+                                        <option value="openai/gpt-oss-20b:free" selected>🚀 GPT OSS 20B - Fast & Reliable</option>
+                                        <option value="z-ai/glm-4.5-air:free">💨 GLM 4.5 Air - Efficient</option>
+                                        <option value="qwen/qwen3-coder:free">💻 Qwen3 Coder - Code-Optimized</option>
+                                    </optgroup>
+                                    <optgroup label="🌟 Premium Models">
+                                        <option value="openrouter/sonoma-sky-alpha">☁️ Sonoma Sky Alpha - Creative</option>
+                                        <option value="openrouter/sonoma-dusk-alpha">🌅 Sonoma Dusk Alpha - Balanced</option>
+                                    </optgroup>
                                 </select>
+                                <p class="text-xs text-gray-500 mt-1">💡 Free models have usage limits. Premium models require credits.</p>
                             </div>
 
                             <!-- Progress Bar -->
@@ -1892,46 +2099,44 @@ No errors recorded yet
             });
           }
 
-          // Generate detailed prompt with formatting instructions
-          const prompt = `Create a beautifully formatted educational guide about ${subject} for ${market} traders.
+          // Generate comprehensive prompt based on subject and market
+          const prompt = `Create an expert-level educational guide about "${subject}" specifically for ${market} trading.
 
-          Structure the content as follows:
-          1. Title Section:
-             - Eye-catching title with relevant emojis
-             - Brief hook or introduction
-             - Reading time estimate
+🎯 TOPIC FOCUS: ${subject}
+💹 MARKET: ${market.charAt(0).toUpperCase() + market.slice(1)}
+📊 TARGET AUDIENCE: Intermediate to advanced traders seeking actionable insights
 
-          2. Main Content:
-             - Detailed explanation of ${subject} and its importance in ${market} trading
-             - Key concepts and principles
-             - Real-world examples with clear explanations
-             - Common mistakes to avoid (with warning emojis)
-             - Pro tips and advanced strategies
-             - Risk management guidelines specific to this topic
+📝 CONTENT REQUIREMENTS:
+• Provide deep, actionable insights about ${subject}
+• Include ${market}-specific examples and scenarios
+• Cover both theoretical concepts and practical implementation
+• Address common pitfalls and how to avoid them
+• Include specific metrics, timeframes, and risk parameters
+• Reference current market dynamics where relevant
 
-          3. Practical Application:
-             - Step-by-step implementation guide
-             - Actionable checklist
-             - Key metrics to monitor
-             - Tools and indicators to use
+🎨 STRUCTURE GUIDELINES:
+1. Compelling title with problem/solution angle
+2. Quick value proposition (why this matters now)
+3. Core concept breakdown with examples
+4. ${market.charAt(0).toUpperCase() + market.slice(1)}-specific applications
+5. Implementation roadmap with specific steps
+6. Risk management considerations
+7. Advanced tips from professional perspective
+8. Actionable next steps
 
-          4. Closing:
-             - Summary of key points
-             - Action steps
-             - Motivational closing note
+💡 MAKE IT PRACTICAL:
+- Include specific numbers and percentages
+- Provide exact timeframes and conditions
+- Give real trading scenarios
+- Mention specific tools and indicators relevant to ${market}
+- Address psychological aspects of implementing ${subject}
 
-          Make it visually appealing with:
-          - Appropriate emojis for each section
-          - Clear formatting (bold, underline, italic)
-          - Dividers between sections
-          - Bullet points and numbered lists
-          - Important points highlighted in bold
-          - Warning sections for critical points`;
+Remember: This should be professional-grade content that traders can immediately apply to improve their ${market} trading results.`;
 
           let content = '';
           if (env.OPENROUTER_API_KEY) {
             try {
-              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY);
+              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model);
               if (!content) {
                 throw new Error('No content generated');
               }
@@ -1944,6 +2149,9 @@ No errors recorded yet
                 .replace(/\*(.*?)\*/g, '<b>$1</b>') // Convert *text* to <b>text</b>
                 .replace(/_(.*?)_/g, '<i>$1</i>') // Convert _text_ to <i>text</i>
                 .replace(/~(.*?)~/g, '<u>$1</u>'); // Convert ~text~ to <u>text</u>
+              
+              // Sanitize for Telegram HTML parsing
+              content = sanitizeForTelegram(content);
             } catch (aiError) {
               console.error('AI generation error:', aiError);
               // Fallback to template if AI fails
@@ -2002,8 +2210,10 @@ No errors recorded yet
             chatId: env.TELEGRAM_CHAT_ID
           });
 
+          // Sanitize content first
+          let finalContent = sanitizeForTelegram(content);
+          
           // Add footer to manual posts too
-          let finalContent = content;
           const footer = await getPostFooter(env);
           if (footer.enabled) {
             const footerText = `\n\n━━━━━━━━━━━━━━━━━━━━\n📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n📱 ${footer.telegramChannel || '@tradingbot'}\n🌐 ${footer.website || 'tradingbot.com'}\n\n#TradingEducation`;
