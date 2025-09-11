@@ -2258,9 +2258,10 @@ Remember: This should be professional-grade content that traders can immediately
             finalContent += footerText;
           }
 
-          // Ensure content is within limits
-          if (finalContent.length > 1020) {
-            finalContent = finalContent.slice(0, 1000) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
+          // Keep content within Telegram message limits (4096 characters for regular messages)
+          // Since we're using two-step posting, we can use the full 4096 character limit
+          if (finalContent.length > 4000) {
+            finalContent = finalContent.slice(0, 3900) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
           }
 
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
