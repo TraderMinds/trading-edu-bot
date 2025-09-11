@@ -913,7 +913,7 @@ export default {
         const storedSchedule = await env.SUBJECTS_QUEUE.get('schedule');
         
         // If a custom schedule is set in UI, validate if we should run now
-        if (storedSchedule && storedSchedule !== '0 * * * *') {
+        if (storedSchedule && storedSchedule !== '*/1 * * * *') {
           console.warn(`UI Schedule configured: ${storedSchedule}, but worker triggered by wrangler.toml cron`);
           console.warn(`Note: Update wrangler.toml crons = ["${storedSchedule}"] and redeploy for schedule to take effect`);
         }
