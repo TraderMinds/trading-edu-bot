@@ -4,6 +4,8 @@
 // TELEGRAM_BOT_TOKEN - required
 // TELEGRAM_CHAT_ID - required
 // OPENROUTER_API_KEY - optional (if provided, worker will call OpenRouter for text generation)
+// ADMIN_TOKEN - required for admin UI access
+// WORKER_URL - optional (for HTTP-Referer header, defaults to current domain)
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org';
 const MAX_RETRIES = 3;
@@ -12,10 +14,17 @@ const RETRY_DELAY = 1000; // ms
 // Utility function for delays
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Queue management functions using KV storage
-async function getSubjectsQueue(env) {
+// Queue management functions using KV storage with cache-busting
+async function getSubjectsQueue(env, bustCache = false) {
   try {
+    // bustCache parameter is used in verification steps to ensure fresh reads
     const queue = await env.SUBJECTS_QUEUE?.get('queue');
+    
+    // Add a small delay when cache busting to ensure KV consistency
+    if (bustCache) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
     return queue ? JSON.parse(queue) : [];
   } catch (error) {
     console.error('Error getting queue:', error);
@@ -129,6 +138,19 @@ async function saveSubjectsQueue(env, queue) {
   try {
     if (env.SUBJECTS_QUEUE) {
       await env.SUBJECTS_QUEUE.put('queue', JSON.stringify(queue));
+      
+      // Add a small delay and verify the save was successful
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify the save by reading back with cache-busting
+      const verification = await getSubjectsQueue(env, true);
+      console.warn(`Queue saved successfully. Items: ${queue.length}, Verified: ${verification.length}`);
+      
+      if (verification.length !== queue.length) {
+        console.error('Queue save verification failed! Retrying...');
+        // Retry once
+        await env.SUBJECTS_QUEUE.put('queue', JSON.stringify(queue));
+      }
     }
     return true;
   } catch (error) {
@@ -216,18 +238,61 @@ async function bulkAddSubjectsToQueue(env, subjects, market = 'crypto', model = 
 }
 
 async function getNextSubject(env) {
-  const queue = await getSubjectsQueue(env);
-  return queue.find(item => !item.processed) || null;
+  // Always get fresh data from KV to avoid cache issues
+  const queue = await getSubjectsQueue(env, true);
+  console.warn(`Getting next subject from queue. Total items: ${queue.length}`);
+  
+  const unprocessedItems = queue.filter(item => !item.processed);
+  console.warn(`Unprocessed items: ${unprocessedItems.length}`);
+  
+  if (unprocessedItems.length > 0) {
+    console.warn(`Next subject: ${unprocessedItems[0].subject} (ID: ${unprocessedItems[0].id})`);
+  }
+  
+  return unprocessedItems[0] || null;
 }
 
 async function removeSubjectFromQueue(env, subjectId) {
-  const queue = await getSubjectsQueue(env);
+  console.warn(`Attempting to remove subject with ID: ${subjectId}`);
+  
+  // Get fresh queue data
+  const queue = await getSubjectsQueue(env, true);
+  console.warn(`Current queue size before removal: ${queue.length}`);
+  
+  const initialLength = queue.length;
   const filteredQueue = queue.filter(item => item.id !== subjectId);
-  await saveSubjectsQueue(env, filteredQueue);
+  
+  console.warn(`Queue size after filtering: ${filteredQueue.length}`);
+  
+  if (filteredQueue.length === initialLength) {
+    console.warn(`Subject with ID ${subjectId} was not found in queue`);
+    return false;
+  }
+  
+  const saveResult = await saveSubjectsQueue(env, filteredQueue);
+  
+  if (saveResult) {
+    console.warn(`Successfully removed subject ${subjectId} from queue`);
+    
+    // Double-check by reading the queue again after a delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const verificationQueue = await getSubjectsQueue(env, true);
+    const stillExists = verificationQueue.find(item => item.id === subjectId);
+    
+    if (stillExists) {
+      console.error(`WARNING: Subject ${subjectId} still exists in queue after deletion! This indicates a KV consistency issue.`);
+      return false;
+    } else {
+      console.warn(`Verified: Subject ${subjectId} successfully removed from queue`);
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 async function updateQueueItem(env, subjectId, subject, market, model) {
-  const queue = await getSubjectsQueue(env);
+  const queue = await getSubjectsQueue(env, true); // Use fresh data
   const item = queue.find(q => q.id === subjectId);
   if (item) {
     item.subject = subject.trim();
@@ -261,7 +326,7 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
   }
 }
 
-async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-oss-20b:free') {
+async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-oss-20b:free', env = {}) {
   if (!apiKey) {
     throw new Error('OpenRouter API key is required');
   }
@@ -426,7 +491,7 @@ async function generateTextWithOpenRouter(prompt, apiKey, model = 'openai/gpt-os
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://trading-edu-bot-worker.tradermindai.workers.dev',
+        'HTTP-Referer': env.WORKER_URL || 'https://trading-edu-bot-worker.tradermindai.workers.dev',
         'X-Title': 'Trading Education Bot',
         'X-Model': body.model
       },
@@ -616,8 +681,9 @@ async function validateImageUrl(imageUrl) {
 }
 
 // Alternative image sources if Unsplash fails
-function getBackupImageUrl() {
-  const backupImages = [
+function getBackupImageUrl(env) {
+  // Default backup images - can be overridden via BACKUP_IMAGES env var (comma-separated URLs)
+  const defaultImages = [
     'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1600&h=900&fit=crop&crop=center', // Trading chart
     'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1600&h=900&fit=crop&crop=center', // Financial data
     'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1600&h=900&fit=crop&crop=center', // Stock market
@@ -625,10 +691,14 @@ function getBackupImageUrl() {
     'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&h=900&fit=crop&crop=center'  // Finance
   ];
   
+  const backupImages = env.BACKUP_IMAGES ? 
+    env.BACKUP_IMAGES.split(',').map(url => url.trim()) : 
+    defaultImages;
+  
   return backupImages[Math.floor(Math.random() * backupImages.length)];
 }
 
-async function postToTelegram(botToken, chatId, caption, imageUrl) {
+async function postToTelegram(botToken, chatId, caption, imageUrl, env) {
   // Validate parameters
   if (!botToken || !chatId) {
     throw new Error(`Missing required Telegram parameters: botToken=${!!botToken}, chatId=${!!chatId}`);
@@ -654,13 +724,13 @@ async function postToTelegram(botToken, chatId, caption, imageUrl) {
     const isValidImage = await validateImageUrl(imageUrl);
     if (!isValidImage) {
       console.warn('Original image URL failed validation, using backup');
-      finalImageUrl = getBackupImageUrl();
+      finalImageUrl = getBackupImageUrl(env);
       
       // Validate backup image too
       const isBackupValid = await validateImageUrl(finalImageUrl);
       if (!isBackupValid) {
         console.warn('Backup image also failed, trying another backup');
-        finalImageUrl = getBackupImageUrl();
+        finalImageUrl = getBackupImageUrl(env);
       }
     }
     
@@ -808,8 +878,24 @@ async function buildAndSend(env) {
   const chatId = env.TELEGRAM_CHAT_ID;
   if (!botToken || !chatId) throw new Error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
 
-  // Check if there's a subject in the queue
+  // Check if there's a subject in the queue with fresh data
   const nextSubject = await getNextSubject(env);
+  
+  // Double-check that this subject still exists and hasn't been deleted
+  if (nextSubject) {
+    console.warn(`Found queued subject: "${nextSubject.subject}" (ID: ${nextSubject.id})`);
+    
+    // Verify the subject still exists in a fresh queue read
+    const freshQueue = await getSubjectsQueue(env, true);
+    const subjectStillExists = freshQueue.find(item => item.id === nextSubject.id && !item.processed);
+    
+    if (!subjectStillExists) {
+      console.warn(`Subject ${nextSubject.id} was deleted during processing. Skipping...`);
+      return { success: false, message: 'Subject was deleted during processing' };
+    }
+    
+    console.warn(`Confirmed subject ${nextSubject.id} still exists. Proceeding with content generation.`);
+  }
   
   let topic, prompt;
   if (nextSubject) {
@@ -854,7 +940,7 @@ Keep it highly actionable and professional for serious traders.`;
       // Use model from queue item or default for scheduled posts
       const scheduledModel = nextSubject?.model || 'deepseek/deepseek-chat-v3.1:free';
       console.warn('Using AI model for scheduled post:', scheduledModel);
-      caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel);
+      caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel, env);
     } catch (err) {
       // AI call failed - don't send anything
       console.error('OpenRouter call failed:', err.message);
@@ -890,7 +976,7 @@ Keep it highly actionable and professional for serious traders.`;
   console.warn('Final caption length:', caption.length);
   console.warn('Image URL:', imgUrl);
 
-  const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl);
+  const sendResult = await postToTelegram(botToken, chatId, caption, imgUrl, env);
   
   // Update posting statistics
   await updatePostingStats(env, true);
@@ -1634,6 +1720,10 @@ export default {
                                 <button type="button" id="refreshQueueBtn" 
                                         class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
                                     <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                                <button type="button" id="refreshCacheBtn" 
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-database mr-2"></i>Refresh Cache
                                 </button>
                                 <button type="button" id="clearQueueBtn" 
                                         class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200">
@@ -2676,6 +2766,34 @@ No errors recorded yet
             }
         }
 
+        async function refreshCache() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+
+            try {
+                showLoading(true);
+                showNotification('Refreshing cache...', 'info');
+                
+                const response = await fetch(\`\${API_BASE}/cache/refresh\`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || 'Failed to refresh cache');
+                
+                showNotification(\`Cache refreshed! Queue has \${data.queueSize} items.\`, 'success');
+                
+                // Reload the queue to show fresh data
+                await loadQueue();
+            } catch (error) {
+                showNotification(\`Failed to refresh cache: \${error.message}\`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
         async function testPost() {
             const token = localStorage.getItem('adminToken');
             if (!token) return;
@@ -3014,6 +3132,7 @@ No errors recorded yet
         document.getElementById('schedule').addEventListener('change', calculateNextPost);
         document.getElementById('addSubjectBtn').addEventListener('click', addSubject);
         document.getElementById('refreshQueueBtn').addEventListener('click', loadQueue);
+        document.getElementById('refreshCacheBtn').addEventListener('click', refreshCache);
         document.getElementById('saveFooterBtn').addEventListener('click', saveFooterSettings);
         document.getElementById('clearQueueBtn').addEventListener('click', clearQueue);
         document.getElementById('testPostBtn').addEventListener('click', testPost);
@@ -3141,7 +3260,7 @@ Remember: This should be professional-grade content that traders can immediately
           let content = '';
           if (env.OPENROUTER_API_KEY) {
             try {
-              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model);
+              content = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, model, env);
               if (!content) {
                 throw new Error('No content generated');
               }
@@ -3242,7 +3361,7 @@ Remember: This should be professional-grade content that traders can immediately
           }
 
           const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
-          const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl);
+          const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl, env);
           
           console.warn('Manual post successful');
           await updatePostingStats(env, true);
@@ -3348,16 +3467,34 @@ Remember: This should be professional-grade content that traders can immediately
       if (path.startsWith('/api/queue/') && request.method === 'DELETE') {
         try {
           const subjectId = path.split('/').pop();
+          console.warn(`DELETE request received for subject ID: ${subjectId}`);
+          
           if (subjectId === 'clear') {
             // Clear entire queue
+            console.warn('Clearing entire queue...');
             await saveSubjectsQueue(env, []);
+            console.warn('Queue cleared successfully');
           } else {
-            await removeSubjectFromQueue(env, subjectId);
+            console.warn(`Removing specific subject: ${subjectId}`);
+            const removeResult = await removeSubjectFromQueue(env, subjectId);
+            if (!removeResult) {
+              console.error(`Failed to remove subject ${subjectId}`);
+              return new Response(JSON.stringify({ 
+                success: false, 
+                error: 'Subject not found or deletion failed' 
+              }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+            console.warn(`Subject ${subjectId} removed successfully`);
           }
+          
           return new Response(JSON.stringify({ success: true }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {
+          console.error('Error in DELETE endpoint:', error);
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
@@ -3370,6 +3507,29 @@ Remember: This should be professional-grade content that traders can immediately
         try {
           const stats = await getPostingStats(env);
           return new Response(JSON.stringify({ stats }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      // Cache refresh endpoint to force fresh queue data
+      if (path === '/api/cache/refresh' && request.method === 'POST') {
+        try {
+          console.warn('Manual cache refresh requested');
+          const freshQueue = await getSubjectsQueue(env, true);
+          console.warn(`Fresh queue loaded with ${freshQueue.length} items`);
+          
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: 'Cache refreshed successfully',
+            queueSize: freshQueue.length,
+            timestamp: new Date().toISOString()
+          }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (error) {

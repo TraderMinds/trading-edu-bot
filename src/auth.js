@@ -1,5 +1,5 @@
 // Auth middleware for the worker
-async function authenticate(request) {
+async function authenticate(request, env) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('Authentication required');
@@ -7,7 +7,7 @@ async function authenticate(request) {
 
   const token = authHeader.split(' ')[1];
   // Compare with environment variable
-  if (token !== process.env.ADMIN_TOKEN) {
+  if (token !== env.ADMIN_TOKEN) {
     throw new Error('Invalid token');
   }
 }
