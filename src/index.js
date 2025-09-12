@@ -3208,19 +3208,12 @@ No errors recorded yet
     if (path.startsWith('/api/')) {
       // Check admin token for all API endpoints
       const adminToken = request.headers.get('Authorization')?.replace('Bearer ', '');
-      console.log('Auth debug - Received token:', adminToken ? adminToken.substring(0, 10) + '...' : 'None');
-      console.log('Auth debug - Expected token exists:', !!env.ADMIN_TOKEN);
-      console.log('Auth debug - Expected token length:', env.ADMIN_TOKEN?.length || 0);
-      
       if (!adminToken || adminToken !== env.ADMIN_TOKEN) {
-        console.log('Auth debug - Authentication failed');
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
           status: 401,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      
-      console.log('Auth debug - Authentication successful');
 
       if (path === '/api/generate' && request.method === 'POST') {
         try {
