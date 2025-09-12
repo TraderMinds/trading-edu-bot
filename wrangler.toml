@@ -25,7 +25,7 @@ POST_FREQUENCY = "0 */1 * * *"
 # Optional: OPENROUTER_API_KEY = "your-openrouter-key"
 
 [env.production]
-name = "trading-edu-bot-worker"
+name = "trading-edu-bot-worker-production"
 
 [env.production.vars]
 LOG_LEVEL = "info"

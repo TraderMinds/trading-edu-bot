@@ -29,8 +29,15 @@ jobs:
         run: |
           echo "Checking wrangler.toml configuration..."
           cat wrangler.toml
-          echo "Verifying account access..."
+          echo ""
+          echo "Testing API token and account access..."
           npx wrangler whoami
+          echo ""
+          echo "Testing KV namespace access..."
+          npx wrangler kv:namespace list || echo "KV access test completed (may fail normally)"
+          echo ""
+          echo "Testing dry run deployment..."
+          npx wrangler deploy --dry-run --env=""
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
@@ -40,14 +47,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy
+          command: deploy --env=""
           wranglerVersion: "4.36.0"
           
       - name: Fallback Deploy (if main deploy fails)
         if: failure()
         run: |
           echo "Main deployment failed, trying alternative approach..."
-          npx wrangler deploy --compatibility-date=2025-09-10
+          npx wrangler deploy --env="" --compatibility-date=2025-09-10
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
