@@ -1,0 +1,31 @@
+name: Test Cloudflare Token
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  test-token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Test API Token Only
+        run: |
+          echo "Testing API token authentication..."
+          npx wrangler@4.36.0 whoami
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          
+      - name: Test Dry Run Deploy
+        run: |
+          echo "Testing dry run deployment..."
+          npx wrangler@4.36.0 deploy --dry-run --env=""
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
