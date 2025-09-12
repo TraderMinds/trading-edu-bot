@@ -638,11 +638,239 @@ function fixUnmatchedTags(content) {
   return fixed;
 }
 
-function getUnsplashImageUrl(keywords) {
-  // Use Unsplash Source to get a relevant free image. No API key required.
-  // Example: https://source.unsplash.com/1600x900/?crypto,finance
-  const q = encodeURIComponent(keywords.join(','));
-  return `https://source.unsplash.com/1600x900/?${q}`;
+async function generateRunwareImage(keywords, subject = null, env) {
+  // Check if Runware API key is available
+  if (!env.RUNWARE_API_KEY) {
+    console.warn('Runware API key not available, falling back to Unsplash');
+    return getUnsplashImageUrl(keywords, subject);
+  }
+
+  try {
+    // Create professional trading-focused prompt based on subject and keywords
+    let imagePrompt = '';
+    
+    if (subject) {
+      const subjectLower = subject.toLowerCase();
+      
+      // Create specific prompts based on trading topics
+      if (subjectLower.includes('chart') || subjectLower.includes('technical') || subjectLower.includes('pattern')) {
+        imagePrompt = 'Professional trading charts and graphs on multiple monitors, financial market data visualization, candlestick patterns, technical analysis indicators, modern trading desk setup, professional lighting, high-quality business photography';
+      } else if (subjectLower.includes('risk') || subjectLower.includes('management')) {
+        imagePrompt = 'Professional businessman analyzing financial risk charts, portfolio management dashboard, sophisticated trading office environment, business strategy planning, modern corporate setting, professional photography';
+      } else if (subjectLower.includes('crypto') || subjectLower.includes('bitcoin') || subjectLower.includes('blockchain')) {
+        imagePrompt = 'Modern cryptocurrency trading setup, Bitcoin and blockchain symbols, digital finance visualization, professional crypto trading environment, futuristic financial technology, high-end business photography';
+      } else if (subjectLower.includes('forex') || subjectLower.includes('currency')) {
+        imagePrompt = 'International forex trading floor, currency exchange rates on screens, global financial markets, professional currency trading environment, modern financial institution, business photography';
+      } else if (subjectLower.includes('psychology') || subjectLower.includes('mindset')) {
+        imagePrompt = 'Professional trader in focused concentration, mental clarity and success mindset, modern trading psychology concept, successful business professional, inspirational business photography';
+      } else if (subjectLower.includes('strategy') || subjectLower.includes('system')) {
+        imagePrompt = 'Strategic business planning environment, financial strategy development, professional trading system setup, business methodology visualization, corporate strategy meeting, professional photography';
+      } else {
+        // General trading content
+        imagePrompt = 'Professional financial trading environment, modern business office with trading screens, financial market analysis, successful trader workspace, professional business photography, sophisticated lighting';
+      }
+    } else {
+      // Default professional trading image
+      imagePrompt = 'Professional financial trading environment, modern business office with multiple trading screens, financial market data, successful trader workspace, professional business photography, sophisticated lighting, high quality';
+    }
+
+    // Add quality enhancers
+    imagePrompt += ', professional lighting, high resolution, business photography, clean modern aesthetic, financial professional environment';
+
+    // Generate unique identifier for the request
+    const taskUUID = crypto.randomUUID();
+
+    const requestPayload = [
+      {
+        taskType: "authentication",
+        apiKey: env.RUNWARE_API_KEY
+      },
+      {
+        taskType: "imageInference",
+        taskUUID: taskUUID,
+        positivePrompt: imagePrompt,
+        negativePrompt: "blurry, low quality, amateur, unprofessional, cartoon, sketch, drawing, anime, gaming, casual, home office, messy, cluttered",
+        width: 1024,
+        height: 576, // 16:9 aspect ratio for better social media display
+        model: "runware:101@1", // Use a reliable model
+        steps: 25,
+        CFGScale: 7,
+        numberResults: 1,
+        outputType: "URL",
+        outputFormat: "JPG",
+        outputQuality: 90
+      }
+    ];
+
+    console.warn('Generating image with Runware AI...');
+    console.warn('Prompt:', imagePrompt);
+
+    // Set a timeout for the API call (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const response = await fetch('https://api.runware.ai/v1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestPayload),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // Handle specific HTTP status codes
+      if (response.status === 429) {
+        throw new Error('Runware API rate limit exceeded - usage quota finished');
+      } else if (response.status === 401) {
+        throw new Error('Runware API authentication failed - invalid API key');
+      } else if (response.status === 503 || response.status === 502) {
+        throw new Error('Runware API service unavailable - server overloaded');
+      } else {
+        throw new Error(`Runware API error: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const result = await response.json();
+    
+    // Check for successful image generation
+    if (result.data && result.data.length > 0) {
+      const imageData = result.data.find(item => item.taskType === 'imageInference');
+      if (imageData && imageData.imageURL) {
+        console.warn('Successfully generated image with Runware:', imageData.imageURL);
+        return imageData.imageURL;
+      }
+    }
+
+    // Handle API errors in response
+    if (result.errors && result.errors.length > 0) {
+      const errorMessage = result.errors[0].message || 'Unknown Runware API error';
+      
+      // Check for specific error types
+      if (errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('limit')) {
+        throw new Error('Runware API quota exceeded - usage limit reached');
+      } else if (errorMessage.toLowerCase().includes('authentication') || errorMessage.toLowerCase().includes('auth')) {
+        throw new Error('Runware API authentication error');
+      } else {
+        throw new Error(`Runware API error: ${errorMessage}`);
+      }
+    }
+
+    throw new Error('No image data returned from Runware API - empty response');
+
+  } catch (error) {
+    // Enhanced error logging with specific fallback reasons
+    if (error.name === 'AbortError') {
+      console.error('Runware API timeout after 30 seconds, falling back to Unsplash');
+    } else if (error.message.includes('quota') || error.message.includes('limit')) {
+      console.error('Runware API usage quota exceeded, falling back to Unsplash');
+    } else if (error.message.includes('authentication')) {
+      console.error('Runware API authentication failed, falling back to Unsplash');
+    } else if (error.message.includes('unavailable') || error.message.includes('overloaded')) {
+      console.error('Runware API service unavailable, falling back to Unsplash');
+    } else {
+      console.error('Runware image generation failed:', error.message, 'falling back to Unsplash');
+    }
+    
+    console.warn('Using Unsplash as backup image source');
+    return getUnsplashImageUrl(keywords, subject);
+  }
+}
+
+function getUnsplashImageUrl(keywords, subject = null) {
+  // Enhanced image selection with more specific and professional keywords
+  
+  // Base professional trading keywords
+  const baseKeywords = ['trading', 'finance', 'business', 'professional'];
+  
+  // Subject-specific keywords for better relevance
+  const subjectKeywords = [];
+  if (subject) {
+    const subjectLower = subject.toLowerCase();
+    
+    // Chart patterns and technical analysis
+    if (subjectLower.includes('chart') || subjectLower.includes('pattern') || subjectLower.includes('technical')) {
+      subjectKeywords.push('charts', 'graphs', 'analytics', 'data-visualization');
+    }
+    
+    // Risk management
+    if (subjectLower.includes('risk') || subjectLower.includes('management')) {
+      subjectKeywords.push('risk-management', 'strategy', 'planning', 'business-strategy');
+    }
+    
+    // Market analysis
+    if (subjectLower.includes('market') || subjectLower.includes('analysis')) {
+      subjectKeywords.push('market-analysis', 'stock-market', 'financial-analysis', 'economics');
+    }
+    
+    // Psychology and mindset
+    if (subjectLower.includes('psychology') || subjectLower.includes('mindset') || subjectLower.includes('emotion')) {
+      subjectKeywords.push('psychology', 'mindset', 'focus', 'concentration', 'success');
+    }
+    
+    // Cryptocurrency specific
+    if (subjectLower.includes('crypto') || subjectLower.includes('bitcoin') || subjectLower.includes('blockchain')) {
+      subjectKeywords.push('cryptocurrency', 'blockchain', 'bitcoin', 'digital-currency');
+    }
+    
+    // Forex specific
+    if (subjectLower.includes('forex') || subjectLower.includes('currency') || subjectLower.includes('fx')) {
+      subjectKeywords.push('forex', 'currency', 'international-business', 'global-economy');
+    }
+    
+    // Options and derivatives
+    if (subjectLower.includes('option') || subjectLower.includes('derivative') || subjectLower.includes('future')) {
+      subjectKeywords.push('options-trading', 'derivatives', 'financial-instruments', 'investment');
+    }
+    
+    // General trading concepts
+    if (subjectLower.includes('strategy') || subjectLower.includes('system')) {
+      subjectKeywords.push('strategy', 'system', 'methodology', 'business-plan');
+    }
+  }
+  
+  // Combine keywords intelligently
+  let finalKeywords;
+  if (subjectKeywords.length > 0) {
+    // Use subject-specific keywords + some base keywords
+    finalKeywords = [...subjectKeywords.slice(0, 2), ...baseKeywords.slice(0, 2), ...keywords];
+  } else {
+    // Use provided keywords + base keywords
+    finalKeywords = [...keywords, ...baseKeywords.slice(0, 2)];
+  }
+  
+  // Remove duplicates and limit to 4-5 keywords for better results
+  const uniqueKeywords = [...new Set(finalKeywords)].slice(0, 5);
+  
+  // Add variety with different image orientations and styles
+  const timestamp = Date.now();
+  const variation = timestamp % 3; // Rotate between 3 variations
+  
+  let imageUrl;
+  switch (variation) {
+    case 0:
+      // Primary variation: Subject-specific
+      imageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(uniqueKeywords.join(','))}`;
+      break;
+    case 1:
+      // Business/professional focus
+      imageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(['business', 'finance', 'professional', 'success', 'growth'].join(','))}`;
+      break;
+    case 2:
+      // Charts and analysis focus
+      imageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(['charts', 'data', 'analytics', 'trading', 'finance'].join(','))}`;
+      break;
+    default:
+      imageUrl = `https://source.unsplash.com/1600x900/?${encodeURIComponent(uniqueKeywords.join(','))}`;
+  }
+  
+  console.warn('Generated Unsplash image keywords:', uniqueKeywords);
+  console.warn('Image variation:', variation);
+  console.warn('Image URL:', imageUrl);
+  
+  return imageUrl;
 }
 
 // Validate image URL before sending to Telegram
@@ -881,27 +1109,33 @@ async function buildAndSend(env) {
   // Check if there's a subject in the queue with fresh data
   const nextSubject = await getNextSubject(env);
   
-  // Double-check that this subject still exists and hasn't been deleted
-  if (nextSubject) {
-    console.warn(`Found queued subject: "${nextSubject.subject}" (ID: ${nextSubject.id})`);
-    
-    // Verify the subject still exists in a fresh queue read
-    const freshQueue = await getSubjectsQueue(env, true);
-    const subjectStillExists = freshQueue.find(item => item.id === nextSubject.id && !item.processed);
-    
-    if (!subjectStillExists) {
-      console.warn(`Subject ${nextSubject.id} was deleted during processing. Skipping...`);
-      return { success: false, message: 'Subject was deleted during processing' };
-    }
-    
-    console.warn(`Confirmed subject ${nextSubject.id} still exists. Proceeding with content generation.`);
+  // If queue is empty, don't post anything
+  if (!nextSubject) {
+    console.warn('Queue is empty - skipping scheduled post');
+    return { 
+      success: false, 
+      message: 'No subjects in queue - skipping post',
+      skipped: true 
+    };
   }
   
-  let topic, prompt;
-  if (nextSubject) {
-    console.warn('Processing queued subject:', nextSubject);
-    topic = nextSubject.market;
-    prompt = `Create an extensive, comprehensive educational guide about "${nextSubject.subject}" for ${nextSubject.market} traders. 
+  // Double-check that this subject still exists and hasn't been deleted
+  console.warn(`Found queued subject: "${nextSubject.subject}" (ID: ${nextSubject.id})`);
+  
+  // Verify the subject still exists in a fresh queue read
+  const freshQueue = await getSubjectsQueue(env, true);
+  const subjectStillExists = freshQueue.find(item => item.id === nextSubject.id && !item.processed);
+  
+  if (!subjectStillExists) {
+    console.warn(`Subject ${nextSubject.id} was deleted during processing. Skipping...`);
+    return { success: false, message: 'Subject was deleted during processing' };
+  }
+  
+  console.warn(`Confirmed subject ${nextSubject.id} still exists. Proceeding with content generation.`);
+
+  // Process the queued subject
+  const topic = nextSubject.market;
+  const prompt = `Create an extensive, comprehensive educational guide about "${nextSubject.subject}" for ${nextSubject.market} traders. 
 
 Include the following in your response:
 📚 **Introduction & Definition**: Clear explanation of the concept
@@ -915,30 +1149,12 @@ Include the following in your response:
 Format with HTML tags for Telegram (use <b></b> for bold, <i></i> for italics).
 Aim for 2000-3000 characters to provide comprehensive educational value.
 Make it detailed, informative, and highly actionable for serious traders.`;
-  } else {
-    // Fallback to random topics if queue is empty
-    topic = ['crypto', 'forex'][Math.floor(Math.random() * 2)];
-    prompt = `Write an extensive educational trading guide for ${topic} traders. 
-
-Include the following sections:
-📚 **Topic Overview**: Pick an important trading concept and explain it clearly
-📖 **Core Principles**: How the concept works in practice
-💡 **Trading Strategies**: 3-4 actionable strategies
-⚠️ **Risk Management**: Key risks and mitigation techniques
-📈 **Market Examples**: Real scenarios where this applies
-🎯 **Implementation**: Step-by-step action plan
-💪 **Advanced Tips**: Pro-level insights
-
-Format with HTML tags for Telegram (use <b></b> for bold, <i></i> for italics).
-Aim for 2000-3000 characters to provide comprehensive educational value.
-Keep it highly actionable and professional for serious traders.`;
-  }
 
   let caption = '';
   if (env.OPENROUTER_API_KEY) {
     try {
-      // Use model from queue item or default for scheduled posts
-      const scheduledModel = nextSubject?.model || 'deepseek/deepseek-chat-v3.1:free';
+      // Use model from queue item or default
+      const scheduledModel = nextSubject.model || 'deepseek/deepseek-chat-v3.1:free';
       console.warn('Using AI model for scheduled post:', scheduledModel);
       caption = await generateTextWithOpenRouter(prompt, env.OPENROUTER_API_KEY, scheduledModel, env);
     } catch (err) {
@@ -970,8 +1186,8 @@ Keep it highly actionable and professional for serious traders.`;
     caption = caption.slice(0, 3900) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
   }
 
-  // Compose image query keywords
-  const imgUrl = getUnsplashImageUrl([topic, 'trading', 'finance']);
+  // Compose image query keywords with subject-specific enhancement using Runware AI
+  const imgUrl = await generateRunwareImage([topic, 'trading', 'finance'], nextSubject.subject, env);
 
   console.warn('Final caption length:', caption.length);
   console.warn('Image URL:', imgUrl);
@@ -981,11 +1197,9 @@ Keep it highly actionable and professional for serious traders.`;
   // Update posting statistics
   await updatePostingStats(env, true);
   
-  // Mark subject as processed and remove from queue if it was from queue
-  if (nextSubject) {
-    await removeSubjectFromQueue(env, nextSubject.id);
-    console.warn('Subject processed and removed from queue:', nextSubject.subject);
-  }
+  // Remove the processed subject from queue
+  await removeSubjectFromQueue(env, nextSubject.id);
+  console.warn('Subject processed and removed from queue:', nextSubject.subject);
   
   return sendResult;
 }
@@ -1005,7 +1219,11 @@ export default {
         }
         
         const res = await buildAndSend(env);
-        console.warn('Posted to Telegram:', res);
+        if (res.skipped) {
+          console.warn('Scheduled post skipped - queue is empty');
+        } else {
+          console.warn('Posted to Telegram:', res);
+        }
       } catch (err) {
         console.error('Error in scheduled job:', err);
       }
@@ -3363,7 +3581,7 @@ Remember: This should be professional-grade content that traders can immediately
             finalContent = finalContent.slice(0, 3900) + '...\n\n' + (footer.enabled ? `📈 <b>${footer.companyName || 'TradingBot Pro'}</b>\n\n<i>~ Your Trading Mentor</i> ✍️` : '');
           }
 
-          const imgUrl = getUnsplashImageUrl(['trading', 'finance']);
+          const imgUrl = await generateRunwareImage(['trading', 'finance'], null, env);
           const result = await postToTelegram(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID, finalContent, imgUrl, env);
           
           console.warn('Manual post successful');
