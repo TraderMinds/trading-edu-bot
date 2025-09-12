@@ -25,10 +25,29 @@ jobs:
       - name: Run linter
         run: npm run lint
         
+      - name: Verify Wrangler Configuration
+        run: |
+          echo "Checking wrangler.toml configuration..."
+          cat wrangler.toml
+          echo "Verifying account access..."
+          npx wrangler whoami
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy --env=""
-          wranglerVersion: "4.35.0"
+          command: deploy
+          wranglerVersion: "4.36.0"
+          
+      - name: Fallback Deploy (if main deploy fails)
+        if: failure()
+        run: |
+          echo "Main deployment failed, trying alternative approach..."
+          npx wrangler deploy --compatibility-date=2025-09-10
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
